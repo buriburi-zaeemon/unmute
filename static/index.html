@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SignBridge - Real-Time AI Sign Language Translator</title>
+  <meta name="description" content="State-of-the-art AI-powered American Sign Language (ASL) translator supporting real-time camera stream, video file upload, practice studio, and subtitle export.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <!-- Header / Navigation Bar -->
+  <header class="app-header">
+    <div class="header-left">
+      <div class="logo-badge">
+        <span class="logo-icon">🖐️</span>
+        <span class="logo-text">Sign<span class="highlight">Bridge</span></span>
+        <span class="version-tag">AI 2.0</span>
+      </div>
+    </div>
+    
+    <!-- Tab Navigation -->
+    <nav class="nav-tabs" id="nav-tabs">
+      <button class="tab-btn active" data-tab="camera-tab" id="tab-btn-camera">
+        <span class="tab-icon">📹</span> Live Camera
+      </button>
+      <button class="tab-btn" data-tab="video-tab" id="tab-btn-video">
+        <span class="tab-icon">📁</span> Video File
+      </button>
+      <button class="tab-btn" data-tab="practice-tab" id="tab-btn-practice">
+        <span class="tab-icon">🎯</span> Practice Studio
+      </button>
+      <button class="tab-btn" data-tab="custom-tab" id="tab-btn-custom">
+        <span class="tab-icon">⚡</span> Custom Signs
+      </button>
+      <button class="tab-btn" data-tab="dictionary-tab" id="tab-btn-dictionary">
+        <span class="tab-icon">📖</span> ASL Guide
+      </button>
+    </nav>
+
+    <div class="header-right">
+      <div class="status-indicator online" id="server-status">
+        <span class="pulse-dot"></span>
+        <span class="status-label">AI Ready</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Workspace Container -->
+  <main class="app-main">
+
+    <!-- ================= TAB 1: LIVE CAMERA TRANSLATOR ================= -->
+    <section class="tab-content active" id="camera-tab">
+      <div class="studio-grid">
+        
+        <!-- Left: Camera Feed & Canvas HUD -->
+        <div class="viewport-card glass-panel">
+          <div class="card-header">
+            <div class="header-title">
+              <span class="live-dot"></span>
+              <h3>Live Camera Stream</h3>
+            </div>
+            <div class="viewport-controls">
+              <label class="toggle-pill">
+                <input type="checkbox" id="toggle-skeleton" checked>
+                <span class="pill-slider"></span>
+                <span class="toggle-text">Skeleton HUD</span>
+              </label>
+              <label class="toggle-pill">
+                <input type="checkbox" id="toggle-mirror" checked>
+                <span class="pill-slider"></span>
+                <span class="toggle-text">Mirror</span>
+              </label>
+              <button class="icon-btn" id="btn-camera-toggle" title="Start/Stop Camera">
+                <span id="cam-toggle-icon">⏹️</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Video & Canvas Display -->
+          <div class="video-container" id="video-container">
+            <video id="webcam-video" autoplay playsinline muted></video>
+            <canvas id="landmark-canvas"></canvas>
+            
+            <!-- Live HUD Overlay -->
+            <div class="hud-overlay" id="hud-overlay">
+              <div class="hud-top-row">
+                <div class="hud-chip" id="hud-fps">FPS: <span class="val">0</span></div>
+                <div class="hud-chip" id="hud-latency">Latency: <span class="val">--</span>ms</div>
+                <div class="hud-chip" id="hud-hand">Hand: <span class="val">None</span></div>
+              </div>
+
+              <!-- Main Floating Sign Badge -->
+              <div class="floating-sign-badge" id="floating-sign-badge" style="display: none;">
+                <div class="sign-name" id="badge-sign">--</div>
+                <div class="sign-conf-bar">
+                  <div class="conf-fill" id="badge-conf-fill" style="width: 0%;"></div>
+                </div>
+                <div class="sign-meta">
+                  <span id="badge-type">Alphabet</span> • <span id="badge-conf">0%</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Camera Placeholder when stopped -->
+            <div class="camera-placeholder" id="camera-placeholder" style="display: none;">
+              <div class="placeholder-content">
+                <span class="placeholder-icon">📷</span>
+                <h4>Camera is paused</h4>
+                <p>Click below to start live sign translation</p>
+                <button class="primary-btn glow-btn" id="btn-start-camera-prompt">Start Camera</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Translation Control Toolbar -->
+          <div class="viewport-footer">
+            <div class="engine-mode-select">
+              <span class="footer-label">Sensitivity:</span>
+              <input type="range" id="sensitivity-slider" min="30" max="95" value="65" class="slider-control">
+              <span class="slider-val" id="sensitivity-val">65%</span>
+            </div>
+            <div class="footer-stats">
+              <span class="stat-pill" id="stat-words-count">Words: 0</span>
+              <span class="stat-pill" id="stat-accuracy">Stability: High</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Live Sentence Composer & Prediction Telemetry -->
+        <div class="telemetry-card glass-panel">
+          
+          <!-- Live Translation Box -->
+          <div class="translation-box">
+            <div class="box-header">
+              <h4>Live Translation</h4>
+              <div class="action-buttons">
+                <button class="action-btn" id="btn-tts" title="Speak sentence aloud">
+                  <span>🔊</span> Listen
+                </button>
+                <button class="action-btn" id="btn-copy" title="Copy to clipboard">
+                  <span>📋</span> Copy
+                </button>
+                <button class="action-btn danger" id="btn-clear" title="Clear transcript">
+                  <span>🗑️</span> Clear
+                </button>
+              </div>
+            </div>
+
+            <!-- Dynamic Sentence Display -->
+            <div class="sentence-display" id="sentence-display">
+              <div class="composed-text" id="composed-text">Show a sign to begin translating...</div>
+              <div class="letter-buffer-strip">
+                <span class="buffer-label">Active Sign:</span>
+                <span class="active-letter-badge" id="active-letter-badge">_</span>
+                <span class="buffer-label">Confidence:</span>
+                <span class="buffer-conf" id="active-letter-conf">0%</span>
+              </div>
+            </div>
+
+            <!-- Sentence Action Shortcuts -->
+            <div class="composer-shortcuts">
+              <button class="shortcut-btn" id="btn-add-space">␣ Space</button>
+              <button class="shortcut-btn" id="btn-backspace">⌫ Backspace</button>
+              <button class="shortcut-btn" id="btn-period">. Period</button>
+            </div>
+          </div>
+
+          <!-- Top-3 Probabilities & Confidence Telemetry -->
+          <div class="telemetry-box">
+            <h4>Confidence Breakdown</h4>
+            <div class="confidence-list" id="confidence-list">
+              <div class="confidence-item">
+                <div class="conf-info">
+                  <span class="conf-label">-</span>
+                  <span class="conf-pct">0%</span>
+                </div>
+                <div class="progress-track"><div class="progress-bar" style="width: 0%;"></div></div>
+              </div>
+              <div class="confidence-item">
+                <div class="conf-info">
+                  <span class="conf-label">-</span>
+                  <span class="conf-pct">0%</span>
+                </div>
+                <div class="progress-track"><div class="progress-bar" style="width: 0%;"></div></div>
+              </div>
+              <div class="confidence-item">
+                <div class="conf-info">
+                  <span class="conf-label">-</span>
+                  <span class="conf-pct">0%</span>
+                </div>
+                <div class="progress-track"><div class="progress-bar" style="width: 0%;"></div></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Quick Sign Helper Hints -->
+          <div class="quick-hints-box">
+            <h4>Recognized Gestures</h4>
+            <div class="gesture-tags-grid">
+              <span class="gtag">A–Z Fingerspelling</span>
+              <span class="gtag">HELLO (Wave)</span>
+              <span class="gtag">THANK YOU (Chin)</span>
+              <span class="gtag">YES (Nod)</span>
+              <span class="gtag">NO (Snap)</span>
+              <span class="gtag">I LOVE YOU (ILY)</span>
+              <span class="gtag">PEACE</span>
+              <span class="gtag">PLEASE</span>
+              <span class="gtag">THUMBS UP</span>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+
+    <!-- ================= TAB 2: VIDEO FILE TRANSLATOR ================= -->
+    <section class="tab-content" id="video-tab">
+      <div class="video-workspace-grid">
+        
+        <!-- Upload & Video Player Column -->
+        <div class="video-player-card glass-panel">
+          <div class="card-header">
+            <div class="header-title">
+              <h3>Video File Translation</h3>
+            </div>
+            <div class="file-badges">
+              <span class="format-pill">MP4</span>
+              <span class="format-pill">WebM</span>
+              <span class="format-pill">MOV</span>
+              <span class="format-pill">AVI</span>
+            </div>
+          </div>
+
+          <!-- Drag & Drop Upload Zone -->
+          <div class="upload-dropzone" id="upload-dropzone">
+            <input type="file" id="video-file-input" accept="video/mp4,video/webm,video/quicktime,video/x-msvideo" hidden>
+            <div class="dropzone-inner">
+              <div class="upload-icon-circle">
+                <span>📹</span>
+              </div>
+              <h4>Drag & drop sign video here</h4>
+              <p>or <button class="browse-link" id="btn-browse-video">browse from computer</button></p>
+              <span class="dropzone-hint">Supports MP4, WebM, MOV, AVI up to 100MB</span>
+            </div>
+          </div>
+
+          <!-- Video Processing Progress Panel -->
+          <div class="processing-panel" id="processing-panel" style="display: none;">
+            <div class="spinner-orbit"></div>
+            <h4 id="proc-status-title">Processing Video...</h4>
+            <p id="proc-status-msg">Extracting hand landmarks and analyzing gestures</p>
+            <div class="progress-track big">
+              <div class="progress-bar glow" id="video-proc-bar" style="width: 0%;"></div>
+            </div>
+            <span class="proc-pct" id="video-proc-pct">0%</span>
+          </div>
+
+          <!-- Synchronized Video Player -->
+          <div class="video-preview-wrapper" id="video-preview-wrapper" style="display: none;">
+            <video id="uploaded-video-player" controls playsinline></video>
+            
+            <!-- Dynamic Subtitle Overlay -->
+            <div class="video-subtitle-overlay" id="video-subtitle-overlay">
+              <span class="sub-text" id="overlay-sub-text">--</span>
+            </div>
+          </div>
+
+          <!-- Upload Actions / Reset -->
+          <div class="video-player-actions" id="video-player-actions" style="display: none;">
+            <button class="secondary-btn" id="btn-upload-another">Upload Another Video</button>
+            <button class="primary-btn glow-btn" id="btn-speak-video-transcript">🔊 Read Full Transcript</button>
+          </div>
+
+        </div>
+
+        <!-- Video Transcript & Export Column -->
+        <div class="transcript-card glass-panel">
+          <div class="card-header">
+            <div class="header-title">
+              <h4>Timestamped Transcript</h4>
+            </div>
+            <div class="export-dropdown">
+              <button class="export-btn" id="btn-export-srt">⬇️ SRT</button>
+              <button class="export-btn" id="btn-export-vtt">⬇️ VTT</button>
+              <button class="export-btn" id="btn-export-json">⬇️ JSON</button>
+            </div>
+          </div>
+
+          <!-- Full Text Summary Box -->
+          <div class="full-transcript-box">
+            <span class="transcript-label">Consolidated Translation:</span>
+            <div class="transcript-content" id="video-full-transcript">
+              Upload a video to see translation transcript.
+            </div>
+          </div>
+
+          <!-- Interactive Timestamped Segments List -->
+          <div class="segments-list-container">
+            <span class="transcript-label">Time-Indexed Events (Click to seek):</span>
+            <div class="segments-list" id="segments-list">
+              <div class="empty-segments-state">No segments detected yet.</div>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+
+    <!-- ================= TAB 3: PRACTICE STUDIO ================= -->
+    <section class="tab-content" id="practice-tab">
+      <div class="practice-grid">
+        
+        <!-- Challenge Card -->
+        <div class="challenge-card glass-panel">
+          <div class="card-header">
+            <div class="header-title">
+              <h3>Sign Challenge</h3>
+            </div>
+            <div class="score-badge">
+              <span>Score: </span><strong id="practice-score">0</strong>
+            </div>
+          </div>
+
+          <div class="challenge-body">
+            <div class="target-sign-header">
+              <div class="target-sign-display">
+                <span class="target-letter" id="practice-target-letter">A</span>
+                <span class="target-name" id="practice-target-name">Letter 'A'</span>
+              </div>
+
+              <!-- Interactive Target Sign Skeleton Visualizer -->
+              <div class="practice-target-visualizer-container">
+                <div class="target-visualizer-box">
+                  <canvas id="practice-target-canvas" width="200" height="200"></canvas>
+                  <div class="target-canvas-tag">
+                    <span class="pulse-dot"></span> Reference Pose
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="target-instruction" id="practice-target-desc">
+              Make a fist with your thumb resting upright alongside your index finger.
+            </div>
+
+            <!-- Real-Time Pose Matching Score Meter -->
+            <div class="match-meter-box">
+              <div class="meter-label">
+                <span>Hand Pose Match:</span>
+                <span class="meter-pct" id="practice-match-pct">0%</span>
+              </div>
+              <div class="progress-track big">
+                <div class="progress-bar match-bar" id="practice-match-bar" style="width: 0%;"></div>
+              </div>
+            </div>
+
+            <div class="challenge-actions">
+              <button class="secondary-btn" id="btn-skip-challenge">Skip Sign</button>
+              <button class="primary-btn glow-btn" id="btn-next-challenge">Next Challenge ➔</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Camera Verification View -->
+        <div class="practice-camera-card glass-panel">
+          <div class="card-header">
+            <h4>Live Hand Verification</h4>
+            <span class="live-status" id="practice-live-status">Camera Active</span>
+          </div>
+          <div class="practice-video-box">
+            <video id="practice-video" autoplay playsinline muted></video>
+            <canvas id="practice-canvas"></canvas>
+            <div class="practice-feedback-banner" id="practice-feedback-banner">
+              Hold hand in front of camera
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+
+    <!-- ================= TAB 4: CUSTOM GESTURE STUDIO ================= -->
+    <section class="tab-content" id="custom-tab">
+      <div class="custom-studio-grid">
+        
+        <!-- Record & Train Card -->
+        <div class="custom-recorder-card glass-panel">
+          <div class="card-header">
+            <h3>Record Custom Sign</h3>
+            <span class="badge-accent">Real-time Calibration</span>
+          </div>
+
+          <div class="custom-form">
+            <div class="form-group">
+              <label for="custom-gesture-name">Gesture / Word Name:</label>
+              <input type="text" id="custom-gesture-name" placeholder="e.g. COFFEE, HELP, EMERGENCY" class="text-input">
+            </div>
+
+            <!-- Recording Camera View -->
+            <div class="recorder-viewport">
+              <video id="custom-video" autoplay playsinline muted></video>
+              <canvas id="custom-canvas"></canvas>
+              <div class="record-countdown" id="record-countdown" style="display: none;">3</div>
+            </div>
+
+            <!-- Recording Progress -->
+            <div class="recording-meter" id="recording-meter" style="display: none;">
+              <div class="meter-label">
+                <span>Capturing Samples:</span>
+                <span id="record-samples-count">0 / 30</span>
+              </div>
+              <div class="progress-track">
+                <div class="progress-bar" id="record-progress-bar" style="width: 0%;"></div>
+              </div>
+            </div>
+
+            <div class="recorder-buttons">
+              <button class="primary-btn glow-btn" id="btn-start-record">🔴 Start Recording (30 frames)</button>
+              <button class="secondary-btn" id="btn-train-custom" disabled>⚡ Train & Save Model</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Registered Custom Gestures Table -->
+        <div class="custom-list-card glass-panel">
+          <div class="card-header">
+            <h4>Saved Custom Gestures</h4>
+            <button class="icon-btn" id="btn-refresh-custom" title="Refresh">🔄</button>
+          </div>
+          <div class="custom-table-wrapper">
+            <div class="custom-table" id="custom-table">
+              <div class="table-empty">No custom gestures recorded yet. Record one to test!</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+
+    <!-- ================= TAB 5: ASL GUIDE & DICTIONARY ================= -->
+    <section class="tab-content" id="dictionary-tab">
+      <div class="dictionary-container glass-panel">
+        <div class="dictionary-header">
+          <div>
+            <h3>American Sign Language (ASL) Visual Guide</h3>
+            <p>Comprehensive visual reference for letters, numbers, and common dynamic gesture phrases.</p>
+          </div>
+          <div class="dictionary-search-bar">
+            <input type="text" id="dict-search-input" placeholder="🔍 Search letter or word (e.g. 'Hello', 'A', 'Peace')..." class="search-input">
+            <div class="filter-pills">
+              <button class="filter-pill active" data-filter="all">All</button>
+              <button class="filter-pill" data-filter="Alphabet">A–Z Alphabet</button>
+              <button class="filter-pill" data-filter="Phrase">Phrases & Signs</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Dictionary Cards Grid -->
+        <div class="dict-grid" id="dict-grid">
+          <!-- Dynamically populated -->
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ================= SIGN INSPECTOR MODAL ================= -->
+  <div id="sign-inspector-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-card glass-panel">
+      <button class="modal-close-btn" id="modal-close-btn" title="Close Modal">&times;</button>
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <h3 id="modal-sign-title">Letter 'A'</h3>
+          <span class="dict-cat-tag" id="modal-sign-category">Alphabet</span>
+        </div>
+        <button class="primary-btn glow-btn modal-practice-btn" id="btn-modal-practice">🎯 Practice This Sign</button>
+      </div>
+      <div class="modal-body-grid">
+        <div class="modal-visualizer-box">
+          <canvas id="modal-sign-canvas" width="280" height="280"></canvas>
+          <div class="modal-vis-tag">
+            <span class="pulse-dot"></span> Canonical ASL Handshape Reference
+          </div>
+        </div>
+        <div class="modal-info-box">
+          <div class="modal-section">
+            <h4 class="modal-section-title">🖐️ Anatomical Execution</h4>
+            <p id="modal-sign-desc" class="modal-desc-text">Form a closed fist with thumb resting alongside index finger.</p>
+          </div>
+          <div class="modal-section">
+            <h4 class="modal-section-title">💡 Technique Tips</h4>
+            <p id="modal-sign-tips" class="modal-tips-text">Keep thumb vertical along the side of the fist.</p>
+          </div>
+          <div class="modal-section">
+            <h4 class="modal-section-title">🔍 Joint Keypoints</h4>
+            <div class="modal-keypoints-list" id="modal-keypoints-list">
+              <span class="kpoint-tag">Thumb: Extended</span>
+              <span class="kpoint-tag">Index: Curled</span>
+              <span class="kpoint-tag">Middle: Curled</span>
+              <span class="kpoint-tag">Ring: Curled</span>
+              <span class="kpoint-tag">Pinky: Curled</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Notification Toast Container -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- JavaScript Module -->
+  <script src="/static/app.js"></script>
+</body>
+</html>

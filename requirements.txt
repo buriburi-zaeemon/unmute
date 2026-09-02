@@ -1,0 +1,12 @@
+fastapi>=0.115.0
+uvicorn>=0.30.0
+websockets>=13.0
+opencv-python>=4.10.0
+mediapipe>=0.10.0
+numpy>=1.24.0
+scikit-learn>=1.4.0
+scipy>=1.11.0
+python-multipart>=0.0.9
+aiofiles>=24.1.0
+pytest>=8.0.0
+httpx>=0.28.0
