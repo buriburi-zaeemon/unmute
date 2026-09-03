@@ -7,7 +7,7 @@ skinparam ArrowColor #00f0ff
 skinparam BoxPadding 10
 skinparam ParticipantPadding 10
 
-title "Sign Language Translator - Complete System Architecture"
+title "Unmute - Real-Time AI Sign Language Translator - System Architecture"
 
 package "Frontend Web Application (Browser Client)" {
     [Live Camera Module] as CamMod #1e293b
@@ -25,12 +25,15 @@ package "Frontend Web Application (Browser Client)" {
 
 package "FastAPI Backend Layer" {
     [FastAPI Application (main.py)] as AppMain #1e293b
+    [System Health API (/api/status)] as RESTStatus #0f172a
     [WebSocket Live Feed (/ws/live-stream)] as WSFeed #0f172a
     [REST Frame API (/api/predict-frame)] as RESTFrame #0f172a
     [Video Upload Handler (/api/upload-video)] as RESTUpload #0f172a
     [Video Status & Result Endpoints] as RESTVideoRes #0f172a
+    [Video File Stream (/api/video-file)] as RESTVideoStream #0f172a
     [Subtitle Exporter (.srt / .vtt / .json)] as SubExporter #0f172a
     [Custom Gesture Storage API] as CustomAPI #0f172a
+    [Dictionary API (/api/dictionary)] as DictAPI #0f172a
 }
 
 package "Sign Recognition Core Engine" {
@@ -39,53 +42,68 @@ package "Sign Recognition Core Engine" {
     [Heuristic ASL Classifier (Anatomical Rules)] as ASLClass #047857
     [Dynamic Temporal Gesture Tracker] as TempTracker #047857
     [Stability & Jitter Filter] as StabFilter #334155
-    [Custom Gesture Trainer] as CustTrainer #334155
+    [Custom Gesture Trainer (KNN ML)] as CustTrainer #334155
     [Video File Processing Pipeline] as VidProc #334155
 }
 
-database "Local Storage & Assets" {
+database "Server Storage & Assets" {
     folder "Uploads / Processed Videos" as StorageUploads #475569
     folder "Custom Gesture Datasets" as StorageCustom #475569
-    folder "Static Web Assets & Dictionaries" as StorageStatic #475569
+    folder "Static Web Assets (HTML/CSS/JS)" as StorageStatic #475569
 }
 
-' Interactions
+' Frontend Interactions
 CamMod --> CanvasHUD : Draws Video & Overlays
 CamMod --> WSFeed : Streams Video Frames (Binary / Base64)
-CamMod --> RESTFrame : Fallback Frame Inference
+
+UploadMod --> RESTUpload : Video File (MP4, WebM, MOV, AVI)
+UploadMod --> RESTVideoRes : Polls Processing Status & Result
+UploadMod --> RESTVideoStream : Streams Processed Video
+UploadMod --> SubExporter : Downloads Transcripts
+
+PracticeMod --> RESTFrame : Evaluates User Hand Pose
+PracticeMod --> VisualizerEng : Renders Target Reference Handshape
+
+CustomMod --> CustomAPI : Records Sample Vectors
+DictMod --> DictAPI : Fetches ASL Guides
+DictMod --> VisualizerEng : Renders Mini Card Skeletons & Modal Inspector
+
+ThemeMod --> BrowserStore : Saves/Loads UI Theme
+
+' Backend to Engine Interactions
 WSFeed --> MPExtractor : Binary / Frame Bytes
 RESTFrame --> MPExtractor : Frame Image Data
 
-UploadMod --> RESTUpload : Video File (MP4, WebM, MOV, AVI)
 RESTUpload --> StorageUploads : Saves File
 RESTUpload --> VidProc : Starts Asynchronous Processing
+RESTVideoStream --> StorageUploads : Reads File
+
+CustomAPI --> CustTrainer : Calibrates Custom Model
+CustTrainer --> StorageCustom : Saves Gesture Weights
+
+AppMain --> StorageStatic : Serves Frontend
+
+' Engine Internal Flow
 VidProc --> MPExtractor : Frame-by-Frame Tracking
 VidProc --> FeatEng : 21 3D Joint Vectors
 VidProc --> ASLClass : Frame Classification
 VidProc --> TempTracker : Motion Gestures
 VidProc --> SubExporter : Generates Timestamped Transcripts
-RESTVideoRes --> UploadMod : Timeline Events & Subtitles
-SubExporter --> UploadMod : SRT / VTT / JSON Downloads
 
 MPExtractor --> FeatEng : 21 3D Coordinates & Handedness
 FeatEng --> ASLClass : Joint Angles, Curl States, Distances
 FeatEng --> TempTracker : Sliding-Window Trajectory
+FeatEng --> CustTrainer : Predicts Custom Gestures
 ASLClass --> StabFilter : Frame Predictions & Confidence
 TempTracker --> StabFilter : Dynamic Gesture Triggers
+
+' Engine to Backend Responses
 StabFilter --> WSFeed : Filtered Letter / Word
 StabFilter --> RESTFrame : Prediction Result
 
+' Backend to Frontend Output
 WSFeed --> SentenceComp : Real-Time Letter / Word Tokens
 SentenceComp --> TTSEngine : Synthesized Speech Audio
 SentenceComp --> CamMod : Live Subtitles & Suggestions
-
-PracticeMod --> RESTFrame : Evaluates User Hand Pose
-PracticeMod --> VisualizerEng : Renders Target Reference Handshape
-DictMod --> VisualizerEng : Renders Mini Card Skeletons & Modal Inspector
-CustomMod --> CustomAPI : Records Sample Vectors
-CustomAPI --> CustTrainer : Calibrates Custom Model
-CustTrainer --> StorageCustom : Saves Gesture Weights
-DictMod --> StorageStatic : Reads ASL Guides & References
-ThemeMod --> BrowserStore : Saves/Loads UI Theme
 
 @enduml
