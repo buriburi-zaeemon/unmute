@@ -20,6 +20,7 @@ package "Frontend Web Application (Browser Client)" {
     [Custom Gesture Studio] as CustomMod #1e293b
     [ASL Dictionary & Modal Guide] as DictMod #1e293b
     [Theme Manager (Light/Dark)] as ThemeMod #1e293b
+    database "Browser LocalStorage" as BrowserStore #0f172a
 }
 
 package "FastAPI Backend Layer" {
@@ -35,7 +36,7 @@ package "FastAPI Backend Layer" {
 package "Sign Recognition Core Engine" {
     [MediaPipe Landmark Extractor] as MPExtractor #334155
     [Scale & Rotation Invariant Feature Engineer] as FeatEng #334155
-    [Hybrid ASL Classifier (Rules + ML)] as ASLClass #047857
+    [Heuristic ASL Classifier (Anatomical Rules)] as ASLClass #047857
     [Dynamic Temporal Gesture Tracker] as TempTracker #047857
     [Stability & Jitter Filter] as StabFilter #334155
     [Custom Gesture Trainer] as CustTrainer #334155
@@ -46,7 +47,6 @@ database "Local Storage & Assets" {
     folder "Uploads / Processed Videos" as StorageUploads #475569
     folder "Custom Gesture Datasets" as StorageCustom #475569
     folder "Static Web Assets & Dictionaries" as StorageStatic #475569
-    folder "User Preferences (localStorage)" as StoragePrefs #475569
 }
 
 ' Interactions
@@ -86,6 +86,6 @@ CustomMod --> CustomAPI : Records Sample Vectors
 CustomAPI --> CustTrainer : Calibrates Custom Model
 CustTrainer --> StorageCustom : Saves Gesture Weights
 DictMod --> StorageStatic : Reads ASL Guides & References
-ThemeMod --> StoragePrefs : Saves/Loads UI Theme
+ThemeMod --> BrowserStore : Saves/Loads UI Theme
 
 @enduml
