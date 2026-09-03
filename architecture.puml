@@ -19,6 +19,7 @@ package "Frontend Web Application (Browser Client)" {
     [Practice Studio] as PracticeMod #1e293b
     [Custom Gesture Studio] as CustomMod #1e293b
     [ASL Dictionary & Modal Guide] as DictMod #1e293b
+    [Theme Manager (Light/Dark)] as ThemeMod #1e293b
 }
 
 package "FastAPI Backend Layer" {
@@ -45,6 +46,7 @@ database "Local Storage & Assets" {
     folder "Uploads / Processed Videos" as StorageUploads #475569
     folder "Custom Gesture Datasets" as StorageCustom #475569
     folder "Static Web Assets & Dictionaries" as StorageStatic #475569
+    folder "User Preferences (localStorage)" as StoragePrefs #475569
 }
 
 ' Interactions
@@ -84,5 +86,6 @@ CustomMod --> CustomAPI : Records Sample Vectors
 CustomAPI --> CustTrainer : Calibrates Custom Model
 CustTrainer --> StorageCustom : Saves Gesture Weights
 DictMod --> StorageStatic : Reads ASL Guides & References
+ThemeMod --> StoragePrefs : Saves/Loads UI Theme
 
 @enduml
