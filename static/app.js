@@ -1476,5 +1476,35 @@ class UnmuteApp {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
+  // ================= THEME INITIALIZATION =================
+  const themeToggleBtn = document.getElementById("theme-toggle-btn");
+  const themeIcon = document.getElementById("theme-icon");
+  const rootElement = document.documentElement; // <html> tag
+  
+  // Load saved theme (default to light)
+  const savedTheme = localStorage.getItem("unmute-theme") || "light";
+  if (savedTheme === "dark") {
+    rootElement.setAttribute("data-theme", "dark");
+    if (themeIcon) themeIcon.textContent = "☀️";
+  } else {
+    rootElement.removeAttribute("data-theme");
+    if (themeIcon) themeIcon.textContent = "🌙";
+  }
+
+  // Toggle Listener
+  if (themeToggleBtn) {
+    themeToggleBtn.addEventListener("click", () => {
+      if (rootElement.getAttribute("data-theme") === "dark") {
+        rootElement.removeAttribute("data-theme");
+        localStorage.setItem("unmute-theme", "light");
+        themeIcon.textContent = "🌙";
+      } else {
+        rootElement.setAttribute("data-theme", "dark");
+        localStorage.setItem("unmute-theme", "dark");
+        themeIcon.textContent = "☀️";
+      }
+    });
+  }
+
   window.app = new UnmuteApp();
 });
