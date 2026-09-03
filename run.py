@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-SignBridge Launcher Script
+Unmute Launcher Script
 Initializes dependencies, verifies AI models, and starts the FastAPI server.
 """
 
@@ -18,12 +18,12 @@ if SCRIPT_DIR not in sys.path:
     sys.path.insert(0, SCRIPT_DIR)
 
 BANNER = r"""
-  ____  _             ____       _     _             
- / ___|(_) __ _ _ __ | __ ) _ __(_) __| | __ _  ___  
- \___ \| |/ _` | '_ \|  _ \| '__| |/ _` |/ _` |/ _ \ 
-  ___) | | (_| | | | | |_) | |  | | (_| | (_| |  __/ 
- |____/|_|\__, |_| |_|____/|_|  |_|\__,_|\__, |\___| 
-          |___/                          |___/        
+  _   _                       _       
+ | | | |_ __  _ __ ___  _   _| |_ ___ 
+ | | | | '_ \| '_ ` _ \| | | | __/ _ \
+ | |_| | | | | | | | | | |_| | ||  __/
+  \___/|_| |_|_| |_| |_|\__,_|\__\___|
+                                      
       AI-Powered Real-Time ASL Translation System
 """
 
@@ -53,7 +53,7 @@ def open_browser(url: str, delay: float = 1.2):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Start SignBridge ASL Translation Server")
+    parser = argparse.ArgumentParser(description="Start Unmute ASL Translation Server")
     parser.add_argument("--host", default="127.0.0.1", help="Host address (default: 127.0.0.1)")
     parser.add_argument("--port", type=int, default=8090, help="Port to listen on (default: 8090)")
     parser.add_argument("--reload", action="store_true", help="Enable auto-reload on code changes")

@@ -1,6 +1,6 @@
-# PowerShell Launcher for SignBridge ASL Translation System
+# PowerShell Launcher for Unmute ASL Translation System
 Write-Host "========================================================" -ForegroundColor Cyan
-Write-Host "       Starting SignBridge ASL Translation System       " -ForegroundColor Yellow
+Write-Host "       Starting Unmute ASL Translation System       " -ForegroundColor Yellow
 Write-Host "========================================================" -ForegroundColor Cyan
 
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path

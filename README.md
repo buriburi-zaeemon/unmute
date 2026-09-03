@@ -1,4 +1,4 @@
-# 🖐️ SignBridge - Real-Time AI Sign Language Translator
+# 🖐️ Unmute - Real-Time AI Sign Language Translator
 
 A real-time American Sign Language (ASL) translator powered by **Google MediaPipe**, **OpenCV**, **Scikit-learn**, and **FastAPI**, featuring **Live Camera Stream** and **Video File Upload** translation capabilities, with interactive practice challenges, custom gesture training, and subtitle export.
 
@@ -60,29 +60,26 @@ Browser Client (Web UI) ───[WebSocket / REST]───> FastAPI Server
 ### 2. Installation
 From the repository root:
 ```bash
-# Navigate to the sign language project directory
-cd sign_language_translator
-
 # Install dependencies (using active Python or virtual environment)
 pip install -r requirements.txt
 ```
 
 ### 3. Start the Server & Web Application
 
-You can start the application using any of the scripts inside `sign_language_translator/`:
+You can start the application using any of the scripts in the root directory:
 
 **Option A — Python Launcher (Recommended)**:
 ```bash
-python sign_language_translator/run.py
+python run.py
 ```
 *(Options: `--port 8090`, `--reload`, `--no-browser`)*
 
 **Option B — Double-Click Batch Script**:
-- Double-click `sign_language_translator/start.bat`.
+- Double-click `start.bat` (or run `.\start.ps1` in PowerShell).
 
 **Option C — Direct Uvicorn**:
 ```bash
-uvicorn backend.main:app --app-dir sign_language_translator --host 127.0.0.1 --port 8090 --reload
+uvicorn backend.main:app --host 127.0.0.1 --port 8090 --reload
 ```
 
 Then open your browser to **`http://localhost:8090`**.
@@ -93,11 +90,11 @@ To stop any running server instance and free the port:
 
 **Python**:
 ```bash
-python sign_language_translator/stop.py
+python stop.py
 ```
 
 **Double-Click**:
-- Double-click `sign_language_translator/stop.bat`.
+- Double-click `stop.bat` (or run `.\stop.ps1` in PowerShell).
 
 ---
 
@@ -119,5 +116,5 @@ python sign_language_translator/stop.py
 
 ## 🧪 Running Automated Tests
 ```bash
-pytest sign_language_translator/tests/ -v
+pytest tests/ -v
 ```

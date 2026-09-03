@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-SignBridge Shutdown Script
-Finds and terminates any running SignBridge server processes on the specified port.
+Unmute Shutdown Script
+Finds and terminates any running Unmute server processes on the specified port.
 """
 
 import os
@@ -45,12 +45,12 @@ def kill_pid(pid: int):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Stop SignBridge ASL Translation Server")
+    parser = argparse.ArgumentParser(description="Stop Unmute ASL Translation Server")
     parser.add_argument("--port", type=int, default=8090, help="Port to check and free (default: 8090)")
     args = parser.parse_args()
 
     print("=" * 55)
-    print(f"[*] Checking for SignBridge server running on port {args.port}...")
+    print(f"[*] Checking for Unmute server running on port {args.port}...")
     
     pids = find_pids_on_port(args.port)
 

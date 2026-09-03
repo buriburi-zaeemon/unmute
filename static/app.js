@@ -1,5 +1,5 @@
 /**
- * SignBridge - High Performance Client Application Logic
+ * Unmute - High Performance Client Application Logic
  * Low-latency real-time video pipeline with binary WebSocket streaming,
  * in-flight flow control, canonical hand skeleton visualizers, and responsive Practice Studio.
  */
@@ -296,7 +296,7 @@ function renderReferenceSkeleton(canvas, signName, options = {}) {
 }
 
 // ================= MAIN APPLICATION CONTROLLER =================
-class SignBridgeApp {
+class UnmuteApp {
   constructor() {
     this.activeTab = "camera-tab";
     this.isCameraRunning = false;
@@ -1476,5 +1476,5 @@ class SignBridgeApp {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-  window.app = new SignBridgeApp();
+  window.app = new UnmuteApp();
 });

@@ -1,6 +1,6 @@
-# PowerShell Shutdown Script for SignBridge ASL Translation System
+# PowerShell Shutdown Script for Unmute ASL Translation System
 Write-Host "========================================================" -ForegroundColor Cyan
-Write-Host "       Stopping SignBridge ASL Translation Server       " -ForegroundColor Red
+Write-Host "       Stopping Unmute ASL Translation Server       " -ForegroundColor Red
 Write-Host "========================================================" -ForegroundColor Cyan
 
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path

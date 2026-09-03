@@ -2,7 +2,7 @@
 setlocal
 
 echo ========================================================
-echo        Starting SignBridge ASL Translation System
+echo        Starting Unmute ASL Translation System
 echo ========================================================
 
 :: Detect Python from virtual environment
