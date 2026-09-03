@@ -18,9 +18,11 @@ A real-time American Sign Language (ASL) translator powered by **Google MediaPip
      - **Practice Studio Reference Pose**: Challenges display a side-by-side reference handshape so you can directly mirror the target sign.
    - 🎯 **Gamified Practice Studio**: Real-time hand pose matching bar with score tracking, holding verification timer, and instant feedback.
    - ⚡ **Ultra-Low Latency Pipeline**: Binary WebSocket transfer with ping-pong flow control and non-blocking worker threads achieving **~13.5ms round-trip response (74+ FPS)**.
-4. **Custom Gesture Recorder & Trainer**:
+4. **Modern Dual-Theme UI**:
+   - Clean, sky-blue **Light Mode** by default, with a complementary **Dark Mode** toggle, persisting via localStorage.
+5. **Custom Gesture Recorder & Trainer**:
    - Capture live samples of novel signs directly through the browser and train lightweight custom models in real-time.
-5. **ASL Visual Dictionary**:
+6. **ASL Visual Dictionary**:
    - Comprehensive searchable reference library of handshapes, fingerspelling cards, and dynamic gesture explanations.
 
 ---
