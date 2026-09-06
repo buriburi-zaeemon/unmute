@@ -7,9 +7,9 @@ A real-time bilingual **American Sign Language (ASL)** and **Indian Sign Languag
 ## 🌟 Key Features
 
 1. **Dual Sign Language Engines (ASL + ISL)**:
-   - 🇺🇸 **American Sign Language (ASL)**: Unimanual 109-dimensional geometric feature pipeline supporting 26 alphabets (A–Z), complete numerals (0–9), and static phrases (*I LOVE YOU, OKAY, PEACE, THUMBS UP, THUMBS DOWN, STOP*).
-   - 🇮🇳 **Indian Sign Language (ISL)**: Bimanual two-handed 218+ dimensional feature pipeline following **ISLRTC standards** (Ministry of Social Justice & Empowerment, Govt. of India) covering 26 bimanual alphabets (A–Z), numerals (0–9), and cultural phrases (*NAMASTE, I LOVE YOU, PEACE, OKAY, THUMBS UP, THUMBS DOWN, STOP*).
-   - 🔄 **Real-Time Language Switcher**: Toggle seamlessly between ASL and ISL on the live feed.
+   - 🇺🇸 **American Sign Language (ASL)**: Unimanual 109-dimensional geometric feature pipeline supporting 24 static alphabets (A–Y excl. dynamic J/Z), complete numerals (0–9), static phrases (*I LOVE YOU, OKAY, PEACE, THUMBS UP, THUMBS DOWN, STOP*), and dynamic sequence gestures.
+   - 🇮🇳 **Indian Sign Language (ISL)**: Bimanual two-handed 228-dimensional feature pipeline (109 Primary Hand + 109 Secondary Hand + 10 Inter-hand spatial/contact metrics) following **ISLRTC standards** (Ministry of Social Justice & Empowerment, Govt. of India) covering 26 bimanual alphabets (A–Z), single-handed numerals (0–9), cultural static phrases (*NAMASTE, I LOVE YOU, PEACE, OKAY, THUMBS UP, THUMBS DOWN, STOP*), and dynamic gesture sequences.
+   - 🔄 **Real-Time Language Switcher**: Toggle seamlessly between ASL and ISL on the live feed and backend dispatch.
 2. **Dual Input Translation**:
    - **Live Webcam Translation**: Ultra-low-latency real-time video stream over WebSocket with glowing HUD landmark skeleton overlay, letter accumulator, sentence composer, and Text-To-Speech (TTS).
    - **Video File Translation**: Upload pre-recorded sign videos (MP4, WebM, MOV, AVI) for automated frame-by-frame analysis, timestamped interactive transcripts, synchronized subtitle playback, and `.srt`/`.vtt`/`.json`/`.txt` export.
@@ -31,23 +31,31 @@ A real-time bilingual **American Sign Language (ASL)** and **Indian Sign Languag
 See [`architecture.puml`](architecture.puml) for the complete PlantUML architecture diagram.
 
 ```
-Browser Client (Web UI) ───[WebSocket / REST]───> FastAPI Server
-                                                       │
-                                          ┌────────────┴───────────┐
-                                          ▼                        ▼
-                                   Live Stream WS          Video Upload Pipeline
-                                          │                        │
-                                          └────────────┬───────────┘
-                                                       ▼
-                                          MediaPipe Landmark Extractor
-                                                       │
-                                          Feature Engineering Engine
-                                                       │
-                                          Hybrid ASL Classifier (Rules + ML)
-                                                       │
-                                          Dynamic Temporal Tracker
-                                                       │
-                                          Stability Filter & Transcript Generator
+Browser Client (Web UI) ───[WebSocket / REST]───> FastAPI Server (main.py)
+                                                        │
+                                           ┌────────────┴───────────┐
+                                           ▼                        ▼
+                                    Live Stream WS          Video Upload Pipeline
+                                           │                        │
+                                           └────────────┬───────────┘
+                                                        ▼
+                                       MediaPipe Hand Landmarker (1 or 2 Hands)
+                                                        │
+                                       Dual Feature Engineer (109-dim / 228-dim)
+                                                        │
+                                           ┌────────────┴───────────┐
+                                           ▼                        ▼
+                                Static MLP (ASL / ISL)     Dynamic Sequence LSTM
+                                           │                        │
+                                           └────────────┬───────────┘
+                                                        ▼
+                                       Stability & Temporal Jitter Filter
+                                                        │
+                                    Structured Tokens (text, type, lang, conf)
+                                                        │
+                                       NLP Sentence Processor & Grammar Engine
+                                                        │
+                                          Refined Sentence Output & TTS
 ```
 
 ---

@@ -39,12 +39,18 @@ package "FastAPI Backend Layer" {
 
 package "Sign Recognition Core Engine" {
     [MediaPipe Hand Landmarker (1 or 2 Hands)] as MPExtractor #334155
-    [Dual-Hand Scale & Rotation Feature Engineer] as FeatEng #334155
+    [Dual-Hand Feature Engineer (109-dim ASL / 228-dim ISL)] as FeatEng #334155
     [Heuristic ASL/ISL Classifier (Rules)] as ASLClass #047857
     [Dynamic Temporal Gesture Tracker] as TempTracker #047857
+    [Dynamic Sequence Recognition (LSTM)] as DynamicLSTM #047857
     [Stability & Jitter Filter] as StabFilter #334155
     [Custom Gesture Trainer (KNN ML)] as CustTrainer #334155
     [Video File Processing Pipeline] as VidProc #334155
+}
+
+package "Language & NLP Processing Layer (nlp/)" {
+    [Structured Token Sequence Buffer] as TokenBuffer #1e293b
+    [Rule-Based Sentence Processor & Grammar Engine] as SentenceProc #1e293b
 }
 
 package "Machine Learning Foundation (ml/)" {
@@ -52,6 +58,7 @@ package "Machine Learning Foundation (ml/)" {
     [Dual Dataset Pipeline (ASL 109-dim & ISL 228-dim)] as MLData #1e293b
     [Static ASL Recognition MLP (PyTorch)] as MLModelASL #047857
     [Static ISL Recognition MLP (PyTorch)] as MLModelISL #047857
+    [Dynamic Sign Sequence LSTM (PyTorch)] as MLModelLSTM #047857
 }
 
 database "Server Storage & Assets" {
@@ -96,24 +103,28 @@ AppMain --> StorageStatic : Serves Frontend
 
 ' Engine Internal Flow
 VidProc --> MPExtractor : Frame-by-Frame Tracking
-VidProc --> FeatEng : 21 3D Joint Vectors (1 or 2 Hands)
+VidProc --> FeatEng : 21 or 42 3D Coordinates & Handedness
 VidProc --> ASLClass : Frame Classification
 VidProc --> TempTracker : Motion Gestures
 VidProc --> SubExporter : Generates Timestamped Transcripts
 
 MPExtractor --> FeatEng : 21 or 42 3D Coordinates & Handedness
-FeatEng --> ASLClass : Joint Angles, Curl States, Bimanual Distances
+FeatEng --> ASLClass : 109-dim (ASL) / 228-dim (ISL) Features
 FeatEng --> TempTracker : Sliding-Window Trajectory
+FeatEng --> DynamicLSTM : Landmark Sequences
 FeatEng --> CustTrainer : Predicts Custom Gestures
 ASLClass --> StabFilter : Frame Predictions & Confidence
 TempTracker --> StabFilter : Dynamic Gesture Triggers
+DynamicLSTM --> StabFilter : Sequence Predictions
 
-' Engine to Backend Responses
-StabFilter --> WSFeed : Filtered Letter / Word
+' Engine to NLP & Backend Output
+StabFilter --> TokenBuffer : Emits Structured Token(text, conf, type, lang)
+TokenBuffer --> SentenceProc : Sequence of Validated Tokens
+SentenceProc --> WSFeed : Refined Sentence Translation
 StabFilter --> RESTFrame : Prediction Result
 
 ' Backend to Frontend Output
-WSFeed --> SentenceComp : Real-Time Letter / Word Tokens
+WSFeed --> SentenceComp : Real-Time Letter / Word / Sentence Tokens
 SentenceComp --> TTSEngine : Synthesized Speech Audio
 SentenceComp --> CamMod : Live Subtitles & Suggestions
 
@@ -122,9 +133,11 @@ FeatEng --> MLAudit : 109-Dim Features (ASL Baseline)
 StorageModels ..> MLAudit : Loads asl_rf_model.joblib
 FeatEng --> MLModelASL : 109-Dim Invariant Features (ASL)
 FeatEng --> MLModelISL : 228-Dim Bimanual Features (ISL)
+FeatEng --> MLModelLSTM : Multi-Frame Sequences (ASL/ISL)
 MLData --> MLModelASL : Preprocessed ASL Batches (.npz)
 MLData --> MLModelISL : Preprocessed ISL Batches (.npz)
 MLModelASL ..> StorageModels : Saves asl_static_mlp.pt
 MLModelISL ..> StorageModels : Saves isl_static_mlp.pt
+MLModelLSTM ..> StorageModels : Saves dynamic_lstm.pt
 
 @enduml
