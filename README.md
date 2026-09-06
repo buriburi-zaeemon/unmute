@@ -131,12 +131,24 @@ python stop.py
 
 ## 🧠 Machine Learning Foundation (Contributor 1)
 
-UNMUTE's static recognition pipeline processes 21 3D MediaPipe landmarks into a 109-dimensional rotation- and scale-invariant geometric feature vector, classified by a PyTorch Multi-Layer Perceptron (MLP).
+UNMUTE supports a Dual-Language Static Recognition Engine for both **American Sign Language (ASL)** and **Indian Sign Language (ISL)**:
+- **ASL Pipeline**: 21 single-hand MediaPipe landmarks $\rightarrow$ 109-dimensional rotation- and scale-invariant geometric feature vector $\rightarrow$ 41 static classes.
+- **ISL Pipeline**: 42 bimanual MediaPipe landmarks (Primary Hand 109 + Secondary Hand 109 + 10 Inter-hand spatial/contact metrics) $\rightarrow$ 228-dimensional feature vector $\rightarrow$ 44 static classes aligned with ISLRTC standards.
 
 ### Audit Legacy Baseline Model
 To verify compatibility and profile the legacy comparative baseline model:
 ```bash
 python -m ml.legacy_rf_audit
+```
+
+### Dataset Preparation Pipeline
+To extract features, enforce zero sample leakage (70% Train / 15% Val / 15% Test), and export compressed `.npz` archives:
+```bash
+# ASL Dataset Pipeline (109-dim features, 41 classes)
+python ml/data/prepare_dataset.py --language ASL --output-dir data
+
+# ISL Dataset Pipeline (228-dim features, 44 classes)
+python ml/data/prepare_dataset.py --language ISL --output-dir data
 ```
 
 ---
@@ -145,3 +157,4 @@ python -m ml.legacy_rf_audit
 ```bash
 pytest tests/ -v
 ```
+

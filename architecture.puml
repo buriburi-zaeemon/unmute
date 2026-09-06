@@ -49,7 +49,7 @@ package "Sign Recognition Core Engine" {
 
 package "Machine Learning Foundation (ml/)" {
     [Legacy Model Audit & Comparative Benchmark] as MLAudit #1e293b
-    [Dual Dataset Pipeline (ASL 109-dim & ISL 218-dim)] as MLData #1e293b
+    [Dual Dataset Pipeline (ASL 109-dim & ISL 228-dim)] as MLData #1e293b
     [Static ASL Recognition MLP (PyTorch)] as MLModelASL #047857
     [Static ISL Recognition MLP (PyTorch)] as MLModelISL #047857
 }
@@ -121,7 +121,7 @@ SentenceComp --> CamMod : Live Subtitles & Suggestions
 FeatEng --> MLAudit : 109-Dim Features (ASL Baseline)
 StorageModels ..> MLAudit : Loads asl_rf_model.joblib
 FeatEng --> MLModelASL : 109-Dim Invariant Features (ASL)
-FeatEng --> MLModelISL : 218-Dim Bimanual Features (ISL)
+FeatEng --> MLModelISL : 228-Dim Bimanual Features (ISL)
 MLData --> MLModelASL : Preprocessed ASL Batches (.npz)
 MLData --> MLModelISL : Preprocessed ISL Batches (.npz)
 MLModelASL ..> StorageModels : Saves asl_static_mlp.pt
