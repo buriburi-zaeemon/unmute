@@ -56,13 +56,27 @@ Browser Client (Web UI) ───[WebSocket / REST]───> FastAPI Server
 ## 🚀 Quick Start Guide
 
 ### 1. Prerequisites
-- Python 3.10+ (Tested with Python 3.14 on Windows)
+- Python 3.11 or 3.12 (PyTorch-compatible environment; Python 3.11.9 tested and recommended)
 - Modern Web Browser (Chrome, Edge, Firefox, Safari) with webcam access
+- Optional: CUDA-compatible GPU (e.g. NVIDIA RTX) for accelerated PyTorch training
 
-### 2. Installation
-From the repository root:
+### 2. Environment Setup & Installation
+We provide automated bootstrap scripts that configure a clean virtual environment with PyTorch, MediaPipe, OpenCV, and FastAPI:
+
+**Option A — Automated Setup Script**:
+- Windows Batch: `.\setup_env.bat`
+- PowerShell: `.\setup_env.ps1`
+
+**Option B — Manual Installation**:
 ```bash
-# Install dependencies (using active Python or virtual environment)
+# Create virtual environment with Python 3.11/3.12
+python -m venv .venv
+
+# Activate virtual environment
+# On Windows PowerShell: .\.venv\Scripts\Activate.ps1
+# On Windows Command Prompt: .\.venv\Scripts\activate.bat
+
+# Install dependencies
 pip install -r requirements.txt
 ```
 
@@ -113,6 +127,18 @@ python stop.py
 - `POST /api/custom-gesture/save` - Records and persists custom gesture training samples.
 - `GET /api/custom-gesture/list` - Lists all registered custom gestures.
 - `DELETE /api/custom-gesture/{gesture_name}` - Deletes a custom gesture.
+
+---
+
+## 🧠 Machine Learning Foundation (Contributor 1)
+
+UNMUTE's static recognition pipeline processes 21 3D MediaPipe landmarks into a 109-dimensional rotation- and scale-invariant geometric feature vector, classified by a PyTorch Multi-Layer Perceptron (MLP).
+
+### Audit Legacy Baseline Model
+To verify compatibility and profile the legacy comparative baseline model:
+```bash
+python -m ml.legacy_rf_audit
+```
 
 ---
 

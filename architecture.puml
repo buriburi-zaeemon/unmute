@@ -46,9 +46,16 @@ package "Sign Recognition Core Engine" {
     [Video File Processing Pipeline] as VidProc #334155
 }
 
+package "Machine Learning Foundation (ml/)" {
+    [Legacy Model Audit & Comparative Benchmark] as MLAudit #1e293b
+    [Dataset Pipeline & 109-dim Preprocessor] as MLData #1e293b
+    [Static ASL Recognition MLP (PyTorch)] as MLModel #047857
+}
+
 database "Server Storage & Assets" {
     folder "Uploads / Processed Videos" as StorageUploads #475569
     folder "Custom Gesture Datasets" as StorageCustom #475569
+    folder "Trained Models & Baselines (models/)" as StorageModels #475569
     folder "Static Web Assets (HTML/CSS/JS)" as StorageStatic #475569
 }
 
@@ -104,6 +111,10 @@ StabFilter --> RESTFrame : Prediction Result
 ' Backend to Frontend Output
 WSFeed --> SentenceComp : Real-Time Letter / Word Tokens
 SentenceComp --> TTSEngine : Synthesized Speech Audio
-SentenceComp --> CamMod : Live Subtitles & Suggestions
+' Machine Learning Foundation Flow
+FeatEng --> MLAudit : 109-Dim Invariant Geometric Vectors
+StorageModels ..> MLAudit : Loads asl_rf_model.joblib (Baseline)
+MLData --> MLModel : Preprocessed .npz Batches (PyTorch)
+MLModel ..> StorageModels : Saves Trained Checkpoint (.pt)
 
 @enduml
