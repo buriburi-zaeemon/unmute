@@ -1,174 +1,237 @@
-@startuml
-!theme vibrant
-skinparam backgroundColor #0b0f19
-skinparam defaultFontName "Segoe UI", Arial, sans-serif
-skinparam defaultFontColor #e2e8f0
-skinparam ArrowColor #00f0ff
-skinparam BoxPadding 10
-skinparam ParticipantPadding 10
-skinparam roundCorner 8
-skinparam shadowing true
+@startuml Unmute_Architecture
+title "UNMUTE - Real-Time AI Sign Language Translator - System Architecture"
+skinparam componentStyle rectangle
 
-title "Unmute - Real-Time AI Sign Language Translator - System Architecture"
-
+' ==========================================================
+' Frontend Client Layer (Browser Client)
+' ==========================================================
 package "Frontend Web Application (Browser Client)" {
-    [Live Camera Controller (app.js)] as CamMod #1e293b
-    [Canvas Skeleton HUD Overlay] as CanvasHUD #0f172a
-    [Sign Language Mode Switcher (ASL/ISL)] as LangSelector #047857
-    [Video Upload & Subtitle Player] as UploadMod #1e293b
-    [Interactive Practice Studio] as PracticeMod #1e293b
-    [Sign Visualizer & Skeleton Guide] as VisualizerEng #047857
-    [Custom Gesture Studio] as CustomMod #1e293b
-    [Bilingual Visual Dictionary (ASL/ISL)] as DictMod #1e293b
-    [Sentence Composer & Accumulator] as SentenceComp #1e293b
-    [Browser Text-to-Speech (Web Speech API)] as TTSEngine #1e293b
-    [Theme Manager (Light/Dark)] as ThemeMod #1e293b
-    database "Browser LocalStorage" as BrowserStore #0f172a
+  component "Live Camera Controller (app.js)" as CamMod <<Controller>>
+  component "Canvas Skeleton HUD Overlay" as CanvasHUD <<Overlay>>
+  component "Sign Language Mode Switcher (ASL/ISL)" as LangSelector <<Component>>
+  component "Video Upload & Subtitle Player" as UploadMod <<Component>>
+  component "Interactive Practice Studio" as PracticeMod <<Component>>
+  component "Sign Visualizer & Skeleton Guide" as VisualizerEng <<Engine>>
+  component "Custom Gesture Studio" as CustomMod <<Component>>
+  component "Bilingual Visual Dictionary (ASL/ISL)" as DictMod <<Component>>
+  component "Sentence Composer & Accumulator" as SentenceComp <<Component>>
+  component "Browser Text-to-Speech (Web Speech API)" as TTSEngine <<Service>>
+  component "Theme Manager (Light/Dark)" as ThemeMod <<Component>>
+  database "Browser LocalStorage" as BrowserStore <<Storage>>
 }
 
+' ==========================================================
+' Backend Layer (FastAPI Core)
+' ==========================================================
 package "FastAPI Backend Layer (backend/main.py)" {
-    [FastAPI Main Application] as AppMain #1e293b
-    [System Health API (/api/status)] as RESTStatus #0f172a
-    [Real-Time WebSocket Feed (/ws/live-stream)] as WSFeed #047857
-    [Single-Frame Predict API (/api/predict-frame)] as RESTFrame #0f172a
-    [Video Upload API (/api/upload-video)] as RESTUpload #0f172a
-    [Video Status & Result APIs (/api/video-*)] as RESTVideoRes #0f172a
-    [Video Stream Server (/api/video-file/{id})] as RESTVideoStream #0f172a
-    [Subtitle Exporter (/api/export-subtitles)] as SubExporter #0f172a
-    [Dictionary Guide API (/api/dictionary)] as DictAPI #0f172a
-    [Custom Gesture API (/api/custom-gesture/*)] as CustomAPI #0f172a
+  component "FastAPI Main Application" as AppMain <<Server>>
+  component "System Health API (/api/status)" as RESTStatus <<Controller>>
+  component "Real-Time WebSocket Feed (/ws/live-stream)" as WSFeed <<WebSocket>>
+  component "Single-Frame Predict API (/api/predict-frame)" as RESTFrame <<Controller>>
+  component "Video Upload API (/api/upload-video)" as RESTUpload <<Controller>>
+  component "Video Status & Result APIs (/api/video-*)" as RESTVideoRes <<Controller>>
+  component "Video Stream Server (/api/video-file/{id})" as RESTVideoStream <<Controller>>
+  component "Subtitle Exporter (/api/export-subtitles)" as SubExporter <<Utility>>
+  component "Dictionary Guide API (/api/dictionary)" as DictAPI <<Controller>>
+  component "Custom Gesture API (/api/custom-gesture/*)" as CustomAPI <<Controller>>
 }
 
+' ==========================================================
+' Sign Recognition Core Engine
+' ==========================================================
 package "Sign Recognition Core Engine (sign_engine/)" {
-    [MediaPipe Hands Landmarker (1 or 2 Hands)] as MPExtractor #334155
-    [Dual-Hand Feature Engineer (feature_engineering.py)\n* ASL: 109-dim Invariant Vector\n* ISL: 228-dim Bimanual Vector] as FeatEng #334155
-    [Hybrid Static Classifier (asl_classifier.py)\n* Anatomical Rule Heuristics\n* Stability History Deque\n* Legacy RF Baseline Fallback] as ASLClass #047857
-    [Dynamic Temporal Gesture Tracker (temporal_tracker.py)\n* 36-Frame Rolling Window\n* Velocity & Trajectory Heuristics\n* 0.9s Cooldown Debounce] as TempTracker #047857
-    [Dynamic Sequence Recognition (PyTorch LSTM)\n* Multi-Frame Sequence Ingestion\n* Complex Motion Classification] as DynamicLSTM #047857
-    [Stability & Jitter Filter] as StabFilter #334155
-    [Custom Gesture Trainer (KNN ML, k=3)] as CustTrainer #334155
-    [Asynchronous Video Processor (video_processor.py)] as VidProc #334155
+  component "MediaPipe Hands Landmarker (1 or 2 Hands)" as MPExtractor <<Pipeline>>
+  component "Dual-Hand Feature Engineer (feature_engineering.py)" as FeatEng <<Engine>>
+  note bottom of FeatEng
+    Feature Dimensions:
+    - ASL: 109-dim Invariant Vector
+    - ISL: 228-dim Bimanual Vector
+      (109 Primary + 109 Secondary + 10 Inter-hand metrics)
+  end note
+
+  component "Hybrid Static Classifier (asl_classifier.py)" as ASLClass <<Classifier>>
+  note bottom of ASLClass
+    Static Engine:
+    - Anatomical Rule Heuristics
+    - 3-Frame Stability Deque
+    - Legacy RF Baseline Fallback
+  end note
+
+  component "Dynamic Temporal Gesture Tracker (temporal_tracker.py)" as TempTracker <<Tracker>>
+  note bottom of TempTracker
+    Temporal Tracker:
+    - 36-Frame Rolling Window
+    - Trajectory & Velocity Heuristics
+    - 0.9s Cooldown Debounce
+  end note
+
+  component "Dynamic Sequence Recognition (PyTorch LSTM)" as DynamicLSTM <<Classifier>>
+  component "Stability & Jitter Filter" as StabFilter <<Filter>>
+  component "Custom Gesture Trainer (KNN ML, k=3)" as CustTrainer <<Trainer>>
+  component "Asynchronous Video Processor (video_processor.py)" as VidProc <<Worker>>
 }
 
+' ==========================================================
+' Language & NLP Processing Layer
+' ==========================================================
 package "Language & NLP Processing Layer (nlp/)" {
-    [Structured Token Interface\n* Token(text, conf, type, lang, ts)] as TokenContract #1e293b
-    [Sequence Buffer Queue\n* Debouncing & Duplicate Suppression] as TokenBuffer #1e293b
-    [Rule-Based Sentence Processor & Grammar Engine\n* ASL / ISL Grammar Transformations\n* Pronoun & Verb Conjugation\n* Punctuation & Capitalization] as SentenceProc #047857
+  component "Structured Token Interface" as TokenContract <<Contract>>
+  note bottom of TokenContract
+    Token Schema:
+    Token(text, conf, type, lang, ts)
+  end note
+
+  component "Sequence Buffer Queue" as TokenBuffer <<Buffer>>
+  component "Rule-Based Sentence Processor & Grammar Engine" as SentenceProc <<Processor>>
+  note bottom of SentenceProc
+    Grammar Pipeline:
+    - ASL / ISL Transformations
+    - Pronoun & Verb Conjugation
+    - Punctuation & Capitalization
+  end note
 }
 
+' ==========================================================
+' Machine Learning Foundation
+' ==========================================================
 package "Machine Learning Foundation (ml/)" {
-    [Authoritative Label Mappings (ml/data/labels.py)\n* ASL: 41 Classes (24 Alpha, 10 Num, 6 Phrase, 1 Space)\n* ISL: 44 Classes (26 Alpha, 10 Num, 7 Phrase, 1 Space)\n* Bidirectional ID Mappings & Dynamic Reservation] as MLLabels #1e293b
-    [Legacy Model Audit Suite (ml/legacy_rf_audit.py)\n* 109-dim Feature Compatibility Verification\n* CPU Latency (4.49ms) & Provenance Benchmarking] as MLAudit #1e293b
-    [Data Preparation Pipeline (ml/data/prepare_dataset.py)\n* Stratified Zero-Leakage Splitting (70% / 15% / 15%)\n* Compressed .npz Archives & JSON Manifests] as MLPrep #1e293b
-    [PyTorch Dataset & DataLoader Abstractions (ml/data/dataset.py)\n* StaticSignDataset(109-dim / 228-dim)\n* get_dataloaders() Train/Val/Test Factory] as MLDataset #1e293b
-    [Static ASL Recognition MLP (ml/models/static_mlp.py)] as MLModelASL #047857
-    [Static ISL Recognition MLP (ml/models/static_mlp.py)] as MLModelISL #047857
-    [Dynamic Sign Sequence LSTM (PyTorch)] as MLModelLSTM #047857
-    [Training, Validation & Evaluation Suite (ml/training/)\n* CrossEntropyLoss, AdamW, Checkpointing\n* Accuracy, F1, Confusion Matrix Benchmark] as MLTrainEval #1e293b
+  component "Authoritative Label Mappings (ml/data/labels.py)" as MLLabels <<Module>>
+  note bottom of MLLabels
+    Controlled Vocabularies:
+    - ASL: 41 Classes (24 Alpha, 10 Num, 6 Phrase, 1 Space)
+    - ISL: 44 Classes (26 Alpha, 10 Num, 7 Phrase, 1 Space)
+  end note
+
+  component "Legacy Model Audit Suite (ml/legacy_rf_audit.py)" as MLAudit <<Benchmark>>
+  component "Data Preparation Pipeline (ml/data/prepare_dataset.py)" as MLPrep <<Pipeline>>
+  component "PyTorch Dataset & DataLoader Abstractions (ml/data/dataset.py)" as MLDataset <<Dataset>>
+  component "Static ASL Recognition MLP (ml/models/static_mlp.py)" as MLModelASL <<Model>>
+  component "Static ISL Recognition MLP (ml/models/static_mlp.py)" as MLModelISL <<Model>>
+  component "Dynamic Sign Sequence LSTM (PyTorch)" as MLModelLSTM <<Model>>
+  component "Training, Validation & Evaluation Suite (ml/training/)" as MLTrainEval <<Engine>>
 }
 
-database "File Storage & Project Assets" {
-    folder "Trained Model Weights (models/)\n* asl_rf_model.joblib (Legacy RF)\n* asl_static_mlp.pt (Trained ASL MLP)\n* isl_static_mlp.pt (Trained ISL MLP)\n* dynamic_lstm.pt (Trained LSTM)" as StorageModels #475569
-    folder "Preprocessed Feature Datasets (data/)\n* asl_train.npz, asl_val.npz, asl_test.npz\n* isl_train.npz, isl_val.npz, isl_test.npz\n* asl_manifest.json, isl_manifest.json" as StorageData #475569
-    folder "Uploaded & Processed Videos (uploads/)\n* Video files, Keyframe caches\n* Generated Subtitle Transcripts" as StorageUploads #475569
-    folder "Custom Gestures (custom_gestures.json)" as StorageCustom #475569
-    folder "Client Static Web Assets (static/)\n* index.html, app.js, styles.css" as StorageStatic #475569
+' ==========================================================
+' Database & File Storage Layer
+' ==========================================================
+package "File Storage & Project Assets" {
+  folder "Trained Model Weights (models/)" as StorageModels {
+    [asl_rf_model.joblib (Legacy RF)]
+    [asl_static_mlp.pt (Trained ASL MLP)]
+    [isl_static_mlp.pt (Trained ISL MLP)]
+    [dynamic_lstm.pt (Trained LSTM)]
+  }
+
+  folder "Preprocessed Feature Datasets (data/)" as StorageData {
+    [asl_train.npz, asl_val.npz, asl_test.npz]
+    [isl_train.npz, isl_val.npz, isl_test.npz]
+    [asl_manifest.json, isl_manifest.json]
+  }
+
+  folder "Uploaded & Processed Videos (uploads/)" as StorageUploads {
+    [Uploaded Video Files]
+    [Keyframe Caches]
+    [Generated Subtitle Transcripts (.srt, .vtt, .json)]
+  }
+
+  folder "Custom Gestures" as StorageCustom {
+    [custom_gestures.json]
+  }
+
+  folder "Client Static Web Assets (static/)" as StorageStatic {
+    [index.html]
+    [app.js]
+    [styles.css]
+  }
 }
 
-' ==============================================================================
-' FRONTEND CLIENT FLOWS
-' ==============================================================================
-CamMod --> CanvasHUD : Draws Video Feed & Glowing 21-Joint HUD
-CamMod --> WSFeed : Streams JPEG Frames & Active Mode ({image, language})
-LangSelector --> WSFeed : Transmits Active Sign Language ("ASL" | "ISL")
-LangSelector --> BrowserStore : Persists User Language Preference
-ThemeMod --> BrowserStore : Saves/Loads UI Theme Preference
+' ==========================================================
+' Flow & Relationships
+' ==========================================================
+' Frontend Client Flow
+CamMod -[#111111]-> CanvasHUD : Draws Video Feed & Glowing HUD
+CamMod -[#0052cc]-> WSFeed : Streams JPEG Frames & Active Mode ({image, language})
+LangSelector -[#0052cc]-> WSFeed : Transmits Active Sign Language ("ASL" | "ISL")
+LangSelector -[#ff991f]-> BrowserStore : Persists User Language Preference
+ThemeMod -[#ff991f]-> BrowserStore : Saves/Loads UI Theme Preference
 
-UploadMod --> RESTUpload : Submits Video File (MP4, WebM, MOV, AVI)
-UploadMod --> RESTVideoRes : Polls Processing Progress (0% to 100%)
-UploadMod --> RESTVideoStream : Plays Processed Video via HTTP Range Requests
-UploadMod --> SubExporter : Downloads Transcripts (.srt, .vtt, .json, .txt)
+UploadMod -[#0052cc]-> RESTUpload : Submits Video File (MP4, WebM, MOV, AVI)
+UploadMod -[#0052cc]-> RESTVideoRes : Polls Processing Progress (0% to 100%)
+UploadMod -[#0052cc]-> RESTVideoStream : Plays Processed Video via HTTP Range Requests
+UploadMod -[#0052cc]-> SubExporter : Downloads Transcripts (.srt, .vtt, .json, .txt)
 
-PracticeMod --> RESTFrame : Sends Single Camera Frame for Practice Verification
-PracticeMod --> VisualizerEng : Renders Anatomical Target Handshape & Scoring
-DictMod --> DictAPI : Requests ASL & ISL Vocabulary Data
-DictMod --> VisualizerEng : Renders Mini Card Skeletons & Modal Inspector
+PracticeMod -[#0052cc]-> RESTFrame : Sends Single Camera Frame for Practice Verification
+PracticeMod -[#111111]-> VisualizerEng : Renders Anatomical Target Handshape & Scoring
+DictMod -[#0052cc]-> DictAPI : Requests ASL & ISL Vocabulary Data
+DictMod -[#111111]-> VisualizerEng : Renders Mini Card Skeletons & Modal Inspector
 
-CustomMod --> CustomAPI : Submits Recorded Landmark Vector Samples
-CustomMod --> CustomAPI : Fetches List of Registered Gestures
+CustomMod -[#0052cc]-> CustomAPI : Submits Recorded Landmark Vector Samples
+CustomMod -[#0052cc]-> CustomAPI : Fetches List of Registered Gestures
 
-' ==============================================================================
-' BACKEND & REST DISPATCH
-' ==============================================================================
-AppMain --> StorageStatic : Serves Frontend Single Page Application
-WSFeed --> MPExtractor : Decodes Binary Frame Bytes
-RESTFrame --> MPExtractor : Decodes Base64 Frame Image
+' Backend & REST Dispatch
+AppMain -[#ff991f]-> StorageStatic : Serves Frontend Single Page Application
+WSFeed -[#00875a]-> MPExtractor : Decodes Binary Frame Bytes
+RESTFrame -[#00875a]-> MPExtractor : Decodes Base64 Frame Image
 
-RESTUpload --> StorageUploads : Saves Ingested Video File
-RESTUpload --> VidProc : Spawns Background Video Processing Thread
-RESTVideoStream --> StorageUploads : Streams Video File Content
-CustomAPI --> CustTrainer : Records / Deletes Gesture Vectors
-CustTrainer --> StorageCustom : Serializes Custom Samples JSON
-DictAPI --> MLLabels : Reads Canonical Class Definitions
+RESTUpload -[#ff991f]-> StorageUploads : Saves Ingested Video File
+RESTUpload -[#00875a]-> VidProc : Spawns Background Video Processing Thread
+RESTVideoStream -[#ff991f]-> StorageUploads : Streams Video File Content
+CustomAPI -[#00875a]-> CustTrainer : Records / Deletes Gesture Vectors
+CustTrainer -[#ff991f]-> StorageCustom : Serializes Custom Samples JSON
+DictAPI -[#00875a]-> MLLabels : Reads Canonical Class Definitions
 
-' ==============================================================================
-' ENGINE INTERNAL FLOW
-' ==============================================================================
-VidProc --> MPExtractor : Frame-by-Frame Tracking Pipeline
-VidProc --> FeatEng : Extracts Invariant Features Per Frame
-VidProc --> ASLClass : Evaluates Static Signs Per Frame
-VidProc --> TempTracker : Tracks Dynamic Inflections Across Frames
-VidProc --> SubExporter : Compiles Timestamped Translation Segments
+' Engine Internal Flow
+VidProc -[#6554c0]-> MPExtractor : Frame-by-Frame Tracking Pipeline
+VidProc -[#6554c0]-> FeatEng : Extracts Invariant Features Per Frame
+VidProc -[#6554c0]-> ASLClass : Evaluates Static Signs Per Frame
+VidProc -[#6554c0]-> TempTracker : Tracks Dynamic Inflections Across Frames
+VidProc -[#6554c0]-> SubExporter : Compiles Timestamped Translation Segments
 
-MPExtractor --> FeatEng : 21 or 42 3D Landmark Points & Handedness
-FeatEng --> ASLClass : 109-dim (ASL) / 228-dim (ISL) Invariant Features
-FeatEng --> TempTracker : Real-Time Wrist & Fingertip Trajectories
-FeatEng --> DynamicLSTM : Fixed-Length Sequence Landmark Vectors
-FeatEng --> CustTrainer : Feature Vectors for k-NN Evaluation
+MPExtractor -[#6554c0]-> FeatEng : 21 or 42 3D Landmark Points & Handedness
+FeatEng -[#6554c0]-> ASLClass : 109-dim (ASL) / 228-dim (ISL) Invariant Features
+FeatEng -[#6554c0]-> TempTracker : Real-Time Wrist & Fingertip Trajectories
+FeatEng -[#6554c0]-> DynamicLSTM : Fixed-Length Sequence Landmark Vectors
+FeatEng -[#6554c0]-> CustTrainer : Feature Vectors for k-NN Evaluation
 
-ASLClass --> StabFilter : Static Frame Prediction & Confidence Score
-TempTracker --> StabFilter : Dynamic Gesture Prediction & Cooldown State
-DynamicLSTM --> StabFilter : Sequence Gesture Predictions
-CustTrainer --> StabFilter : Custom Gesture Prediction & Distance Score
+ASLClass -[#6554c0]-> StabFilter : Static Frame Prediction & Confidence Score
+TempTracker -[#6554c0]-> StabFilter : Dynamic Gesture Prediction & Cooldown State
+DynamicLSTM -[#6554c0]-> StabFilter : Sequence Gesture Predictions
+CustTrainer -[#6554c0]-> StabFilter : Custom Gesture Prediction & Distance Score
 
-' ==============================================================================
-' NLP INTEGRATION & FRONTEND SPEECH OUTPUT
-' ==============================================================================
-StabFilter --> TokenContract : Emits Validated Token(text, conf, type, lang, ts)
-TokenContract --> TokenBuffer : Pushes Stable Token into Rolling Queue
-TokenBuffer --> SentenceProc : Provides Sequence of Contextual Tokens
-SentenceProc --> WSFeed : Returns Natural Language Sentence Translation
-StabFilter --> WSFeed : Returns Real-Time Frame HUD Landmark Payload
-StabFilter --> RESTFrame : Returns Immediate Single-Frame Classification
+' NLP Integration & Frontend Speech Output
+StabFilter -[#00875a]-> TokenContract : Emits Validated Token(text, conf, type, lang, ts)
+TokenContract -[#00875a]-> TokenBuffer : Pushes Stable Token into Rolling Queue
+TokenBuffer -[#00875a]-> SentenceProc : Provides Sequence of Contextual Tokens
+SentenceProc -[#0052cc]-> WSFeed : Returns Natural Language Sentence Translation
+StabFilter -[#0052cc]-> WSFeed : Returns Real-Time Frame HUD Landmark Payload
+StabFilter -[#0052cc]-> RESTFrame : Returns Immediate Single-Frame Classification
 
-WSFeed --> SentenceComp : Delivers Live Tokens & Formed Sentence
-SentenceComp --> CamMod : Renders Live Subtitle Overlays & History Log
-SentenceComp --> TTSEngine : Triggers Spoken Audio via Web Speech API
+WSFeed -[#0052cc]-> SentenceComp : Delivers Live Tokens & Formed Sentence
+SentenceComp -[#111111]-> CamMod : Renders Live Subtitle Overlays & History Log
+SentenceComp -[#111111]-> TTSEngine : Triggers Spoken Audio via Web Speech API
 
-' ==============================================================================
-' MACHINE LEARNING FOUNDATION FLOW
-' ==============================================================================
-StorageModels ..> MLAudit : Loads asl_rf_model.joblib for Compatibility Audit
-FeatEng --> MLAudit : Validates 109-dim Feature Parity
+' Machine Learning Foundation Flow
+StorageModels ..[#ff991f]..> MLAudit : Loads asl_rf_model.joblib for Compatibility Audit
+FeatEng -[#de350b]-> MLAudit : Validates 109-dim Feature Parity
 
-MLLabels --> MLPrep : Supplies Canonical 41 ASL & 44 ISL Class IDs
-MLPrep --> StorageData : Exports Compressed .npz Splits & JSON Manifests
-StorageData --> MLDataset : StaticSignDataset Ingests .npz Arrays
-MLDataset --> MLTrainEval : Feeds Batched PyTorch Tensors to Training Loops
+MLLabels -[#de350b]-> MLPrep : Supplies Canonical 41 ASL & 44 ISL Class IDs
+MLPrep -[#ff991f]-> StorageData : Exports Compressed .npz Splits & JSON Manifests
+StorageData -[#ff991f]-> MLDataset : StaticSignDataset Ingests .npz Arrays
+MLDataset -[#de350b]-> MLTrainEval : Feeds Batched PyTorch Tensors to Training Loops
 
-FeatEng --> MLModelASL : 109-dim Invariant Tensor Input
-FeatEng --> MLModelISL : 228-dim Bimanual Invariant Tensor Input
-FeatEng --> MLModelLSTM : Multi-Frame Sequential Tensor Input
+FeatEng -[#de350b]-> MLModelASL : 109-dim Invariant Tensor Input
+FeatEng -[#de350b]-> MLModelISL : 228-dim Bimanual Invariant Tensor Input
+FeatEng -[#de350b]-> MLModelLSTM : Multi-Frame Sequential Tensor Input
 
-MLTrainEval --> MLModelASL : Optimizes StaticASL_MLP Parameters
-MLTrainEval --> MLModelISL : Optimizes StaticISL_MLP Parameters
-MLTrainEval --> MLModelLSTM : Optimizes Dynamic Sequence LSTM Parameters
+MLTrainEval -[#de350b]-> MLModelASL : Optimizes StaticASL_MLP Parameters
+MLTrainEval -[#de350b]-> MLModelISL : Optimizes StaticISL_MLP Parameters
+MLTrainEval -[#de350b]-> MLModelLSTM : Optimizes Dynamic Sequence LSTM Parameters
 
-MLModelASL ..> StorageModels : Persists asl_static_mlp.pt Checkpoint
-MLModelISL ..> StorageModels : Persists isl_static_mlp.pt Checkpoint
-MLModelLSTM ..> StorageModels : Persists dynamic_lstm.pt Checkpoint
+MLModelASL ..[#ff991f]..> StorageModels : Persists asl_static_mlp.pt Checkpoint
+MLModelISL ..[#ff991f]..> StorageModels : Persists isl_static_mlp.pt Checkpoint
+MLModelLSTM ..[#ff991f]..> StorageModels : Persists dynamic_lstm.pt Checkpoint
 
-StorageModels ..> ASLClass : Loads Trained Static MLP Models for Live Inference
-StorageModels ..> DynamicLSTM : Loads Trained LSTM Model for Live Inference
+StorageModels ..[#de350b]..> ASLClass : Loads Trained Static MLP Models for Live Inference
+StorageModels ..[#de350b]..> DynamicLSTM : Loads Trained LSTM Model for Live Inference
 
 @enduml
