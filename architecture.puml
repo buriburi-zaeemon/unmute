@@ -146,7 +146,7 @@ package "File Storage & Project Assets" {
 }
 
 ' ==========================================================
-' Flow & Relationships (Each arrow has a unique color)
+' Flow & Relationships
 ' ==========================================================
 ' Frontend Client Flow
 CamMod -[#2E7D32]-> CanvasHUD : Draws Video Feed & Glowing HUD
