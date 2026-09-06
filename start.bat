@@ -2,14 +2,14 @@
 setlocal
 
 echo ========================================================
-echo        Starting Unmute ASL Translation System
+echo        Starting UNMUTE Sign Language Translator
 echo ========================================================
 
 :: Detect Python from virtual environment
-if exist "..\.venv\Scripts\python.exe" (
-    set "PYTHON_EXE=..\.venv\Scripts\python.exe"
-) else if exist ".venv\Scripts\python.exe" (
-    set "PYTHON_EXE=.venv\Scripts\python.exe"
+if exist "%~dp0.venv\Scripts\python.exe" (
+    set "PYTHON_EXE=%~dp0.venv\Scripts\python.exe"
+) else if exist "%~dp0..\.venv\Scripts\python.exe" (
+    set "PYTHON_EXE=%~dp0..\.venv\Scripts\python.exe"
 ) else (
     set "PYTHON_EXE=python"
 )
@@ -19,4 +19,7 @@ echo [*] Using Python: %PYTHON_EXE%
 :: Launch run.py with all passed arguments
 "%PYTHON_EXE%" "%~dp0run.py" %*
 
-pause
+if %errorlevel% neq 0 (
+    echo [-] Error starting UNMUTE server.
+    pause
+)

@@ -52,20 +52,47 @@ def open_browser(url: str, delay: float = 1.2):
     threading.Thread(target=_open, daemon=True).start()
 
 
+def is_port_in_use(port: int, host: str = "127.0.0.1") -> bool:
+    import socket
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.settimeout(0.5)
+        return s.connect_ex((host, port)) == 0
+
+
 def main():
-    parser = argparse.ArgumentParser(description="Start Unmute ASL Translation Server")
+    parser = argparse.ArgumentParser(description="Start UNMUTE Real-Time Sign Language Translation Server")
     parser.add_argument("--host", default="127.0.0.1", help="Host address (default: 127.0.0.1)")
-    parser.add_argument("--port", type=int, default=8090, help="Port to listen on (default: 8090)")
+    parser.add_argument("--port", type=int, default=8000, help="Port to listen on (default: 8000)")
     parser.add_argument("--reload", action="store_true", help="Enable auto-reload on code changes")
     parser.add_argument("--no-browser", action="store_true", help="Do not automatically open the browser")
     args = parser.parse_args()
 
+    # Re-exec under virtual environment python if running under generic system python
+    venv_python = os.path.join(SCRIPT_DIR, ".venv", "Scripts", "python.exe")
+    if os.path.exists(venv_python) and os.path.abspath(sys.executable) != os.path.abspath(venv_python):
+        print(f"[*] Re-executing via Virtual Environment Python: {venv_python}")
+        os.execv(venv_python, [venv_python] + sys.argv)
+
     print(BANNER)
     print("=" * 60)
-    print(f" Python Version : {sys.version.split()[0]}")
-    print(f" Working Dir    : {SCRIPT_DIR}")
-    print(f" Target Server  : http://{args.host}:{args.port}")
+    print(f" Python Executable : {sys.executable}")
+    print(f" Python Version    : {sys.version.split()[0]}")
+    print(f" Working Directory : {SCRIPT_DIR}")
+    print(f" Server URL        : http://{args.host}:{args.port}")
     print("=" * 60)
+
+    # Check port availability
+    if is_port_in_use(args.port, args.host):
+        print(f"[!] Warning: Port {args.port} appears to be in use.")
+        print(f"[*] Attempting to stop existing UNMUTE instance on port {args.port}...")
+        try:
+            from stop import find_pids_on_port, kill_pid
+            pids = find_pids_on_port(args.port)
+            for p in pids:
+                kill_pid(p)
+            time.sleep(1)
+        except Exception as e:
+            print(f"[-] Could not automatically free port {args.port}: {e}")
 
     # Verify model assets
     check_and_download_model()

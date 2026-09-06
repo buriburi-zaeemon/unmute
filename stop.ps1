@@ -1,15 +1,15 @@
-# PowerShell Shutdown Script for Unmute ASL Translation System
+# PowerShell Shutdown Script for UNMUTE Sign Language Translator
 Write-Host "========================================================" -ForegroundColor Cyan
-Write-Host "       Stopping Unmute ASL Translation Server       " -ForegroundColor Red
+Write-Host "       Stopping UNMUTE Sign Language Translator        " -ForegroundColor Red
 Write-Host "========================================================" -ForegroundColor Cyan
 
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 
 # Detect virtual environment python
-if (Test-Path "$scriptDir\..\.venv\Scripts\python.exe") {
-    $pythonExe = "$scriptDir\..\.venv\Scripts\python.exe"
-} elseif (Test-Path "$scriptDir\.venv\Scripts\python.exe") {
+if (Test-Path "$scriptDir\.venv\Scripts\python.exe") {
     $pythonExe = "$scriptDir\.venv\Scripts\python.exe"
+} elseif (Test-Path "$scriptDir\..\.venv\Scripts\python.exe") {
+    $pythonExe = "$scriptDir\..\.venv\Scripts\python.exe"
 } else {
     $pythonExe = "python"
 }

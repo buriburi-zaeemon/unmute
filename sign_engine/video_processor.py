@@ -5,7 +5,7 @@ aggregates continuous gestures into time-stamped subtitle events, and generates 
 """
 
 from dataclasses import dataclass, field, asdict
-from typing import List, Dict, Any, Optional, Callable
+from typing import List, Dict, Any, Optional, Callable, Tuple
 import os
 import time
 import cv2

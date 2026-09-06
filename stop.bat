@@ -2,14 +2,14 @@
 setlocal
 
 echo ========================================================
-echo        Stopping Unmute ASL Translation Server
+echo        Stopping UNMUTE Sign Language Translator
 echo ========================================================
 
 :: Detect Python from virtual environment
-if exist "..\.venv\Scripts\python.exe" (
-    set "PYTHON_EXE=..\.venv\Scripts\python.exe"
-) else if exist ".venv\Scripts\python.exe" (
-    set "PYTHON_EXE=.venv\Scripts\python.exe"
+if exist "%~dp0.venv\Scripts\python.exe" (
+    set "PYTHON_EXE=%~dp0.venv\Scripts\python.exe"
+) else if exist "%~dp0..\.venv\Scripts\python.exe" (
+    set "PYTHON_EXE=%~dp0..\.venv\Scripts\python.exe"
 ) else (
     set "PYTHON_EXE=python"
 )
