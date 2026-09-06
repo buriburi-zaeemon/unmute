@@ -358,6 +358,33 @@ Focus on:
 
 Ensure that samples from the same source video are not incorrectly distributed across training and testing sets.
 
+### Incorporating Indian Sign Language (ISL) (Week 2 / Before Week 3)
+
+Incorporate Indian Sign Language (ISL) alongside American Sign Language (ASL) into the dataset strategy and feature engineering pipeline before starting Week 3 static MLP implementation:
+
+1. **Dual Controlled Static Vocabularies**:
+   - Maintain ASL static vocabulary (unimanual fingerspelling A–Z excluding dynamic J/Z, numerals 0–9, static phrases, and control signs).
+   - Add ISL static vocabulary aligned with ISLRTC (Indian Sign Language Research and Training Centre) standards:
+     - 26 bimanual letters (A–Z).
+     - Single-handed numerals (0–9).
+     - Static phrases (including `NAMASTE`, `I LOVE YOU`, `OKAY`, `PEACE`, `STOP`, `THUMBS UP`, `THUMBS DOWN`).
+     - Control signs (`SPACE`).
+
+2. **Dual-Hand Feature Engineering (228 Dimensions for ISL)**:
+   - Extend feature extraction to support bimanual signs:
+     - Primary hand invariant geometric features (109 dims).
+     - Secondary hand invariant geometric features (109 dims).
+     - Inter-hand spatial and contact metrics (10 dims: minimum fingertip contact distance, normalized wrist-to-wrist vector, Euclidean distance, fingertip-to-fingertip distance pairs, and inter-palm facing alignment dot product).
+     - Fallback handling when only one hand is visible or for unimanual signs.
+
+3. **Dual Dataset Preparation & Zero-Leakage Splitting**:
+   - Implement data preparation pipelines for both ASL (109 dims) and ISL (228 dims).
+   - Enforce sample-level zero-leakage stratified splitting (70% Train / 15% Val / 15% Test) for both languages.
+   - Export reproducible compressed `.npz` feature archives and JSON manifests for both ASL and ISL.
+
+4. **PyTorch Dataset & DataLoader Abstraction**:
+   - Provide PyTorch `Dataset` and `DataLoader` pipelines compatible with both single-hand (109-dim) and dual-hand (228-dim) input tensors before proceeding to Week 3 model architectures.
+
 ### ⏸ PAUSE-AND-REPORT CHECKPOINT — END OF WEEK 2
 
 Before beginning Week 3, stop and report:

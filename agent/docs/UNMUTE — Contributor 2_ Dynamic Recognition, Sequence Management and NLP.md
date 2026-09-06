@@ -445,6 +445,22 @@ Tasks:
 7. Implement labels and metadata handling.
 8. Prepare an ML-ready temporal dataset.
 
+### Incorporating Indian Sign Language (ISL) (Week 2 / Before Week 3)
+
+Incorporate Indian Sign Language (ISL) alongside American Sign Language (ASL) into the temporal data pipeline before starting Week 3 dynamic dataset preparation:
+
+1. **Dual-Hand Dynamic Sequences**:
+   - Support bimanual dynamic sequences for ISL dynamic signs (e.g., `HELLO`, `THANK YOU`, `YES`, `NO`, `PLEASE`, `HELP`, `WATER`) where two-handed trajectories and spatial interactions occur.
+   - Extend temporal feature frames to support both single-hand (109-dim) for ASL and dual-hand (228-dim) for ISL.
+
+2. **Language-Aware Dynamic Vocabulary**:
+   - Coordinate dynamic vocabulary lists with Contributor 1's static label mappings (`ml/data/labels.py`) and Contributor 3's token interface.
+   - Maintain distinct dynamic sign classes or language flags so that ASL dynamic signs and ISL dynamic signs are recognized accurately according to the active language mode.
+
+3. **Temporal Sliding Window & Sequence Buffering**:
+   - Ensure the sequence extraction and sliding-window temporal buffering logic in `temporal_tracker.py` gracefully handles both 1-hand and 2-hand landmark streams without crashing or dropping frames.
+   - Prepare dynamic dataset schemas to store dual-hand landmark trajectories without temporal frame leakage.
+
 ### PAUSE-AND-REPORT CHECKPOINT — END OF WEEK 2
 
 Report:

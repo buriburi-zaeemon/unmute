@@ -218,6 +218,22 @@ Define:
 - Duplicate-token behavior where relevant
 - Clear API contract
 
+### Incorporating Indian Sign Language (ISL) (Week 2 / Before Week 3)
+
+Incorporate Indian Sign Language (ISL) alongside American Sign Language (ASL) into the structured token format and sequence interface before starting Week 3 rule-based sentence formation:
+
+1. **Dual-Language Structured Token Schema**:
+   - Extend the token contract (e.g. `Token`) to support an explicit language identifier or mode tag (`language: "ASL" | "ISL"`), alongside `text`, `confidence`, `sign_type` (`letter`, `number`, `phrase`, `dynamic`, `control`), and `timestamp`.
+   - Ensure the token schema handles both single-handed ASL signs and bimanual ISL signs emitted from the recognition layers without format divergence.
+
+2. **ISL-Specific Lexicon and Greeting Patterns**:
+   - Incorporate ISL static phrases (e.g. `NAMASTE`, `I LOVE YOU`, `OKAY`, `PEACE`, `STOP`, `THUMBS UP`, `THUMBS DOWN`) and culturally distinct greeting patterns into the token normalization dictionary.
+   - Account for ISL fingerspelling differences (complete 26-letter alphabet A–Z) compared to ASL (which reserves J and Z for dynamic tracking).
+
+3. **Language Mode Synchronization**:
+   - Design the sequence buffer and sentence processing interface to be language-aware, allowing real-time switching between ASL and ISL sentence-formation pipelines based on the active client mode.
+   - Specify fallback and validation rules when an incoming token's language tag does not match the active sequence buffer language context.
+
 ---
 
 ## ⏸ PAUSE-AND-REPORT CHECKPOINT — END OF WEEK 2
