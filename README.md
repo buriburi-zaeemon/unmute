@@ -123,17 +123,57 @@ python stop.py
 
 ## 📡 API Reference
 
-- `GET /api/status` - System health check & active model information.
-- `POST /api/predict-frame` - Single-frame base64/binary image landmark and sign prediction.
-- `WS /ws/live-stream` - Bi-directional real-time WebSocket for camera streaming.
-- `POST /api/upload-video` - Uploads a video file and starts asynchronous processing.
+- `GET /api/status` - System health check, active model type, and supported languages (`["ASL", "ISL"]`).
+- `POST /api/predict-frame` - Single-frame base64/binary image landmark extraction and sign prediction.
+- `WS /ws/live-stream` - Bi-directional real-time WebSocket for live camera streaming and HUD prediction feeds.
+- `POST /api/upload-video` - Uploads a video file and triggers asynchronous processing.
 - `GET /api/video-status/{job_id}` - Polls video processing progress (0% - 100%).
-- `GET /api/video-result/{job_id}` - Retrieves timestamped translation segments and subtitles.
+- `GET /api/video-result/{job_id}` - Retrieves timestamped translation segments, sentence transcripts, and subtitles.
+- `GET /api/video-file/{filename}` - Streams processed video file with HTTP Range support for synchronized playback.
 - `GET /api/export-subtitles/{job_id}?format=srt` - Downloads `.srt`, `.vtt`, `.json`, or `.txt` subtitle files.
-- `GET /api/dictionary` - Returns full ASL dictionary data.
-- `POST /api/custom-gesture/save` - Records and persists custom gesture training samples.
+- `GET /api/dictionary` - Returns full bilingual ASL & ISL dictionary vocabulary, tips, and reference landmarks.
+- `POST /api/custom-gesture/save` - Records and persists custom gesture training samples to disk.
 - `GET /api/custom-gesture/list` - Lists all registered custom gestures.
 - `DELETE /api/custom-gesture/{gesture_name}` - Deletes a custom gesture.
+
+---
+
+## 📂 Project Structure
+
+```text
+unmute/
+├── backend/                  # FastAPI web server and routing layer
+│   └── main.py               # REST endpoints, WebSocket handler, and static file serving
+├── sign_engine/              # Sign recognition core engine
+│   ├── landmark_extraction.py# MediaPipe hand landmark extraction (21 3D points)
+│   ├── feature_engineering.py# Invariant feature extraction (109-dim ASL / 228-dim ISL)
+│   ├── asl_classifier.py     # Hybrid anatomical rule-based & legacy ML classifier
+│   ├── temporal_tracker.py   # Rolling window (36 frames) dynamic gesture tracker
+│   ├── custom_gestures.py    # Live k-NN custom gesture recorder & trainer
+│   └── video_processor.py    # Offline video processing & keyframe subtitle pipeline
+├── ml/                       # Machine Learning foundation & static recognition
+│   ├── data/                 # Data preparation, labels, and PyTorch datasets
+│   │   ├── labels.py         # Canonical class definitions for ASL (41) and ISL (44)
+│   │   ├── prepare_dataset.py# Feature extraction & stratified zero-leakage 70/15/15 splitting
+│   │   └── dataset.py        # PyTorch StaticSignDataset and get_dataloaders() factory
+│   ├── legacy_rf_audit.py    # Audit suite for legacy Random Forest model
+│   └── dataset_recommendation.md # Dataset strategy and anatomical sign catalogs
+├── static/                   # Frontend single-page application
+│   ├── index.html            # Web interface layout and modal templates
+│   ├── app.js                # WebSocket streaming, Canvas HUD, and UI controller
+│   └── styles.css            # Responsive styling, light/dark theme variables
+├── models/                   # Serialized machine learning models and baselines
+│   └── asl_rf_model.joblib   # Legacy Random Forest baseline model (109 features)
+├── tests/                    # Automated pytest test suite
+│   ├── test_backend.py       # REST and WebSocket endpoint integration tests
+│   ├── test_sign_engine.py   # Landmark, feature engineering, and classifier tests
+│   └── test_ml_data.py       # Label mappings, dual features, zero-leakage splits tests
+├── agent/                    # Contributor documentation, master plans, and audit reports
+│   └── docs/                 # Contributor prompts, weekly roadmaps, and audit files
+├── architecture.puml         # Authoritative PlantUML system architecture diagram
+├── requirements.txt          # Python dependencies
+└── README.md                 # Project overview and developer documentation
+```
 
 ---
 
