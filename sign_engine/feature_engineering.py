@@ -5,7 +5,7 @@ Transforms landmarks into a local palm coordinate system (orthonormal basis) for
 """
 
 from dataclasses import dataclass
-from typing import List, Tuple, Dict, Any
+from typing import List, Tuple, Dict, Any, Optional
 import numpy as np
 
 
@@ -21,8 +21,22 @@ class HandFeatures:
     feature_vector: np.ndarray  # Flattened 1D feature vector for ML classifiers
 
 
+@dataclass
+class DualHandFeatures:
+    primary_hand: HandFeatures
+    secondary_hand: Optional[HandFeatures]  # None if only 1 hand detected
+    is_bimanual: bool  # True if both hands are detected
+    inter_hand_distances: Dict[str, float]  # Intersite fingertip & wrist distances
+    relative_orientation: Dict[str, float]  # Angular normal difference & elevation
+    feature_vector: np.ndarray  # Flattened 1D vector (228 dims for ISL bimanual recognition)
+
+
 class FeatureEngineer:
     """Extracts rotation-invariant and scale-invariant geometric features from hand landmarks."""
+
+    SINGLE_HAND_FEATURES: int = 109
+    DUAL_HAND_FEATURES: int = 228
+    TOTAL_FEATURES: int = 109  # Alias for backward compatibility
 
     @staticmethod
     def _compute_angle(p1: np.ndarray, p2: np.ndarray, p3: np.ndarray) -> float:
@@ -206,3 +220,114 @@ class FeatureEngineer:
             palm_orientation=palm_orientation,
             feature_vector=feature_vector,
         )
+
+    def extract_dual_features(
+        self,
+        primary_landmarks: List[Tuple[float, float, float]],
+        secondary_landmarks: Optional[List[Tuple[float, float, float]]] = None,
+    ) -> DualHandFeatures:
+        """
+        Extracts combined bimanual geometric features for Indian Sign Language (ISL).
+        Yields a 228-dimensional invariant feature vector:
+          - 109 dims: Primary hand geometric features
+          - 109 dims: Secondary hand geometric features (or zeros if unimanual)
+          - 10 dims: Inter-hand spatial, contact, and orientation features
+        """
+        primary_feats = self.extract_features(primary_landmarks)
+
+        if secondary_landmarks and len(secondary_landmarks) >= 21:
+            secondary_feats = self.extract_features(secondary_landmarks)
+            is_bimanual = True
+
+            # Extract raw coordinates for inter-hand distance computation
+            p1_pts = np.array(primary_landmarks, dtype=np.float32)
+            p2_pts = np.array(secondary_landmarks, dtype=np.float32)
+
+            # Normalization factor: average palm scale
+            scale1 = float(np.linalg.norm(p1_pts[9] - p1_pts[0]))
+            scale2 = float(np.linalg.norm(p2_pts[9] - p2_pts[0]))
+            avg_scale = max(0.5 * (scale1 + scale2), 1e-4)
+
+            # Intersite fingertip and wrist Euclidean distances
+            wrist_dist = float(np.linalg.norm(p1_pts[0] - p2_pts[0]) / avg_scale)
+            thumb_dist = float(np.linalg.norm(p1_pts[4] - p2_pts[4]) / avg_scale)
+            index_dist = float(np.linalg.norm(p1_pts[8] - p2_pts[8]) / avg_scale)
+            middle_dist = float(np.linalg.norm(p1_pts[12] - p2_pts[12]) / avg_scale)
+            pinky_dist = float(np.linalg.norm(p1_pts[20] - p2_pts[20]) / avg_scale)
+
+            # Cross-digit contacts (dominant index touching base hand knuckles/digits)
+            dom_index_to_base_thumb = float(np.linalg.norm(p1_pts[8] - p2_pts[4]) / avg_scale)
+            dom_index_to_base_palm = float(np.linalg.norm(p1_pts[8] - p2_pts[0]) / avg_scale)
+
+            # Relative orientation & elevation
+            norm1 = np.array([
+                primary_feats.palm_orientation["normal_x"],
+                primary_feats.palm_orientation["normal_y"],
+                primary_feats.palm_orientation["normal_z"]
+            ])
+            norm2 = np.array([
+                secondary_feats.palm_orientation["normal_x"],
+                secondary_feats.palm_orientation["normal_y"],
+                secondary_feats.palm_orientation["normal_z"]
+            ])
+            cos_n = float(np.clip(np.dot(norm1, norm2), -1.0, 1.0))
+            normal_angle = float(np.degrees(np.arccos(cos_n)) / 180.0)
+
+            rel_height = float((p1_pts[0][1] - p2_pts[0][1]) / avg_scale)
+            rel_lateral = float((p1_pts[0][0] - p2_pts[0][0]) / avg_scale)
+
+            inter_distances = {
+                "wrist_dist": wrist_dist,
+                "thumb_dist": thumb_dist,
+                "index_dist": index_dist,
+                "middle_dist": middle_dist,
+                "pinky_dist": pinky_dist,
+                "dom_index_to_base_thumb": dom_index_to_base_thumb,
+                "dom_index_to_base_palm": dom_index_to_base_palm,
+            }
+            rel_orientation = {
+                "normal_angle": normal_angle,
+                "rel_height": rel_height,
+                "rel_lateral": rel_lateral,
+            }
+
+            inter_vector = np.array([
+                wrist_dist, thumb_dist, index_dist, middle_dist, pinky_dist,
+                dom_index_to_base_thumb, dom_index_to_base_palm,
+                normal_angle, rel_height, rel_lateral
+            ], dtype=np.float32)
+
+            feature_vector = np.concatenate([
+                primary_feats.feature_vector,
+                secondary_feats.feature_vector,
+                inter_vector
+            ])
+        else:
+            secondary_feats = None
+            is_bimanual = False
+            inter_distances = {
+                "wrist_dist": 0.0, "thumb_dist": 0.0, "index_dist": 0.0,
+                "middle_dist": 0.0, "pinky_dist": 0.0,
+                "dom_index_to_base_thumb": 0.0, "dom_index_to_base_palm": 0.0,
+            }
+            rel_orientation = {
+                "normal_angle": 0.0, "rel_height": 0.0, "rel_lateral": 0.0,
+            }
+            # Zero-pad secondary 109 features + 10 inter-hand features
+            secondary_zeros = np.zeros(self.SINGLE_HAND_FEATURES, dtype=np.float32)
+            inter_zeros = np.zeros(10, dtype=np.float32)
+            feature_vector = np.concatenate([
+                primary_feats.feature_vector,
+                secondary_zeros,
+                inter_zeros
+            ])
+
+        return DualHandFeatures(
+            primary_hand=primary_feats,
+            secondary_hand=secondary_feats,
+            is_bimanual=is_bimanual,
+            inter_hand_distances=inter_distances,
+            relative_orientation=rel_orientation,
+            feature_vector=feature_vector,
+        )
+

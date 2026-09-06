@@ -5,7 +5,7 @@ dynamic temporal gesture tracking, custom gesture training, and video file proce
 """
 
 from .landmark_extractor import LandmarkExtractor, HandResult, SingleHandData
-from .feature_engineering import FeatureEngineer, HandFeatures
+from .feature_engineering import FeatureEngineer, HandFeatures, DualHandFeatures
 from .asl_classifier import ASLClassifier, RecognitionResult
 from .temporal_tracker import TemporalGestureTracker
 from .gesture_trainer import GestureTrainer
@@ -17,6 +17,7 @@ __all__ = [
     "SingleHandData",
     "FeatureEngineer",
     "HandFeatures",
+    "DualHandFeatures",
     "ASLClassifier",
     "RecognitionResult",
     "TemporalGestureTracker",
