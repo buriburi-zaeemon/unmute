@@ -146,92 +146,92 @@ package "File Storage & Project Assets" {
 }
 
 ' ==========================================================
-' Flow & Relationships
+' Flow & Relationships (Each arrow has a unique color)
 ' ==========================================================
 ' Frontend Client Flow
-CamMod -[#111111]-> CanvasHUD : Draws Video Feed & Glowing HUD
-CamMod -[#0052cc]-> WSFeed : Streams JPEG Frames & Active Mode ({image, language})
-LangSelector -[#0052cc]-> WSFeed : Transmits Active Sign Language ("ASL" | "ISL")
-LangSelector -[#ff991f]-> BrowserStore : Persists User Language Preference
-ThemeMod -[#ff991f]-> BrowserStore : Saves/Loads UI Theme Preference
+CamMod -[#2E7D32]-> CanvasHUD : Draws Video Feed & Glowing HUD
+CamMod -[#0288D1]-> WSFeed : Streams JPEG Frames & Active Mode ({image, language})
+LangSelector -[#00838F]-> WSFeed : Transmits Active Sign Language ("ASL" | "ISL")
+LangSelector -[#E65100]-> BrowserStore : Persists User Language Preference
+ThemeMod -[#F57C00]-> BrowserStore : Saves/Loads UI Theme Preference
 
-UploadMod -[#0052cc]-> RESTUpload : Submits Video File (MP4, WebM, MOV, AVI)
-UploadMod -[#0052cc]-> RESTVideoRes : Polls Processing Progress (0% to 100%)
-UploadMod -[#0052cc]-> RESTVideoStream : Plays Processed Video via HTTP Range Requests
-UploadMod -[#0052cc]-> SubExporter : Downloads Transcripts (.srt, .vtt, .json, .txt)
+UploadMod -[#1565C0]-> RESTUpload : Submits Video File (MP4, WebM, MOV, AVI)
+UploadMod -[#0097A7]-> RESTVideoRes : Polls Processing Progress (0% to 100%)
+UploadMod -[#303F9F]-> RESTVideoStream : Plays Processed Video via HTTP Range Requests
+UploadMod -[#6A1B9A]-> SubExporter : Downloads Transcripts (.srt, .vtt, .json, .txt)
 
-PracticeMod -[#0052cc]-> RESTFrame : Sends Single Camera Frame for Practice Verification
-PracticeMod -[#111111]-> VisualizerEng : Renders Anatomical Target Handshape & Scoring
-DictMod -[#0052cc]-> DictAPI : Requests ASL & ISL Vocabulary Data
-DictMod -[#111111]-> VisualizerEng : Renders Mini Card Skeletons & Modal Inspector
+PracticeMod -[#00ACC1]-> RESTFrame : Sends Single Camera Frame for Practice Verification
+PracticeMod -[#43A047]-> VisualizerEng : Renders Anatomical Target Handshape & Scoring
+DictMod -[#3949AB]-> DictAPI : Requests ASL & ISL Vocabulary Data
+DictMod -[#8E24AA]-> VisualizerEng : Renders Mini Card Skeletons & Modal Inspector
 
-CustomMod -[#0052cc]-> CustomAPI : Submits Recorded Landmark Vector Samples
-CustomMod -[#0052cc]-> CustomAPI : Fetches List of Registered Gestures
+CustomMod -[#00897B]-> CustomAPI : Submits Recorded Landmark Vector Samples
+CustomMod -[#00796B]-> CustomAPI : Fetches List of Registered Gestures
 
 ' Backend & REST Dispatch
-AppMain -[#ff991f]-> StorageStatic : Serves Frontend Single Page Application
-WSFeed -[#00875a]-> MPExtractor : Decodes Binary Frame Bytes
-RESTFrame -[#00875a]-> MPExtractor : Decodes Base64 Frame Image
+AppMain -[#D84315]-> StorageStatic : Serves Frontend Single Page Application
+WSFeed -[#00B0FF]-> MPExtractor : Decodes Binary Frame Bytes
+RESTFrame -[#0091EA]-> MPExtractor : Decodes Base64 Frame Image
 
-RESTUpload -[#ff991f]-> StorageUploads : Saves Ingested Video File
-RESTUpload -[#00875a]-> VidProc : Spawns Background Video Processing Thread
-RESTVideoStream -[#ff991f]-> StorageUploads : Streams Video File Content
-CustomAPI -[#00875a]-> CustTrainer : Records / Deletes Gesture Vectors
-CustTrainer -[#ff991f]-> StorageCustom : Serializes Custom Samples JSON
-DictAPI -[#00875a]-> MLLabels : Reads Canonical Class Definitions
+RESTUpload -[#BF360C]-> StorageUploads : Saves Ingested Video File
+RESTUpload -[#558B2F]-> VidProc : Spawns Background Video Processing Thread
+RESTVideoStream -[#E64A19]-> StorageUploads : Streams Video File Content
+CustomAPI -[#7CB342]-> CustTrainer : Records / Deletes Gesture Vectors
+CustTrainer -[#EF6C00]-> StorageCustom : Serializes Custom Samples JSON
+DictAPI -[#C2185B]-> MLLabels : Reads Canonical Class Definitions
 
 ' Engine Internal Flow
-VidProc -[#6554c0]-> MPExtractor : Frame-by-Frame Tracking Pipeline
-VidProc -[#6554c0]-> FeatEng : Extracts Invariant Features Per Frame
-VidProc -[#6554c0]-> ASLClass : Evaluates Static Signs Per Frame
-VidProc -[#6554c0]-> TempTracker : Tracks Dynamic Inflections Across Frames
-VidProc -[#6554c0]-> SubExporter : Compiles Timestamped Translation Segments
+VidProc -[#5C6BC0]-> MPExtractor : Frame-by-Frame Tracking Pipeline
+VidProc -[#7E57C2]-> FeatEng : Extracts Invariant Features Per Frame
+VidProc -[#26A69A]-> ASLClass : Evaluates Static Signs Per Frame
+VidProc -[#AB47BC]-> TempTracker : Tracks Dynamic Inflections Across Frames
+VidProc -[#42A5F5]-> SubExporter : Compiles Timestamped Translation Segments
 
-MPExtractor -[#6554c0]-> FeatEng : 21 or 42 3D Landmark Points & Handedness
-FeatEng -[#6554c0]-> ASLClass : 109-dim (ASL) / 228-dim (ISL) Invariant Features
-FeatEng -[#6554c0]-> TempTracker : Real-Time Wrist & Fingertip Trajectories
-FeatEng -[#6554c0]-> DynamicLSTM : Fixed-Length Sequence Landmark Vectors
-FeatEng -[#6554c0]-> CustTrainer : Feature Vectors for k-NN Evaluation
+MPExtractor -[#26C6DA]-> FeatEng : 21 or 42 3D Landmark Points & Handedness
+FeatEng -[#66BB6A]-> ASLClass : 109-dim (ASL) / 228-dim (ISL) Invariant Features
+FeatEng -[#9CCC65]-> TempTracker : Real-Time Wrist & Fingertip Trajectories
+FeatEng -[#D4E157]-> DynamicLSTM : Fixed-Length Sequence Landmark Vectors
+FeatEng -[#FFA726]-> CustTrainer : Feature Vectors for k-NN Evaluation
 
-ASLClass -[#6554c0]-> StabFilter : Static Frame Prediction & Confidence Score
-TempTracker -[#6554c0]-> StabFilter : Dynamic Gesture Prediction & Cooldown State
-DynamicLSTM -[#6554c0]-> StabFilter : Sequence Gesture Predictions
-CustTrainer -[#6554c0]-> StabFilter : Custom Gesture Prediction & Distance Score
+ASLClass -[#FF7043]-> StabFilter : Static Frame Prediction & Confidence Score
+TempTracker -[#8D6E63]-> StabFilter : Dynamic Gesture Prediction & Cooldown State
+DynamicLSTM -[#78909C]-> StabFilter : Sequence Gesture Predictions
+CustTrainer -[#EC407A]-> StabFilter : Custom Gesture Prediction & Distance Score
 
 ' NLP Integration & Frontend Speech Output
-StabFilter -[#00875a]-> TokenContract : Emits Validated Token(text, conf, type, lang, ts)
-TokenContract -[#00875a]-> TokenBuffer : Pushes Stable Token into Rolling Queue
-TokenBuffer -[#00875a]-> SentenceProc : Provides Sequence of Contextual Tokens
-SentenceProc -[#0052cc]-> WSFeed : Returns Natural Language Sentence Translation
-StabFilter -[#0052cc]-> WSFeed : Returns Real-Time Frame HUD Landmark Payload
-StabFilter -[#0052cc]-> RESTFrame : Returns Immediate Single-Frame Classification
+StabFilter -[#4DB6AC]-> TokenContract : Emits Validated Token(text, conf, type, lang, ts)
+TokenContract -[#81C784]-> TokenBuffer : Pushes Stable Token into Rolling Queue
+TokenBuffer -[#AED581]-> SentenceProc : Provides Sequence of Contextual Tokens
+SentenceProc -[#FFB74D]-> WSFeed : Returns Natural Language Sentence Translation
+StabFilter -[#FF8A65]-> WSFeed : Returns Real-Time Frame HUD Landmark Payload
+StabFilter -[#BA68C8]-> RESTFrame : Returns Immediate Single-Frame Classification
 
-WSFeed -[#0052cc]-> SentenceComp : Delivers Live Tokens & Formed Sentence
-SentenceComp -[#111111]-> CamMod : Renders Live Subtitle Overlays & History Log
-SentenceComp -[#111111]-> TTSEngine : Triggers Spoken Audio via Web Speech API
+WSFeed -[#4FC3F7]-> SentenceComp : Delivers Live Tokens & Formed Sentence
+SentenceComp -[#4DD0E1]-> CamMod : Renders Live Subtitle Overlays & History Log
+SentenceComp -[#F06292]-> TTSEngine : Triggers Spoken Audio via Web Speech API
 
 ' Machine Learning Foundation Flow
-StorageModels ..[#ff991f]..> MLAudit : Loads asl_rf_model.joblib for Compatibility Audit
-FeatEng -[#de350b]-> MLAudit : Validates 109-dim Feature Parity
+StorageModels ..[#A1887F]..> MLAudit : Loads asl_rf_model.joblib for Compatibility Audit
+FeatEng -[#90A4AE]-> MLAudit : Validates 109-dim Feature Parity
 
-MLLabels -[#de350b]-> MLPrep : Supplies Canonical 41 ASL & 44 ISL Class IDs
-MLPrep -[#ff991f]-> StorageData : Exports Compressed .npz Splits & JSON Manifests
-StorageData -[#ff991f]-> MLDataset : StaticSignDataset Ingests .npz Arrays
-MLDataset -[#de350b]-> MLTrainEval : Feeds Batched PyTorch Tensors to Training Loops
+MLLabels -[#283593]-> MLPrep : Supplies Canonical 41 ASL & 44 ISL Class IDs
+MLPrep -[#1B5E20]-> StorageData : Exports Compressed .npz Splits & JSON Manifests
+StorageData -[#33691E]-> MLDataset : StaticSignDataset Ingests .npz Arrays
+MLDataset -[#827717]-> MLTrainEval : Feeds Batched PyTorch Tensors to Training Loops
 
-FeatEng -[#de350b]-> MLModelASL : 109-dim Invariant Tensor Input
-FeatEng -[#de350b]-> MLModelISL : 228-dim Bimanual Invariant Tensor Input
-FeatEng -[#de350b]-> MLModelLSTM : Multi-Frame Sequential Tensor Input
+FeatEng -[#F57F17]-> MLModelASL : 109-dim Invariant Tensor Input
+FeatEng -[#FF6F00]-> MLModelISL : 228-dim Bimanual Invariant Tensor Input
+FeatEng -[#B71C1C]-> MLModelLSTM : Multi-Frame Sequential Tensor Input
 
-MLTrainEval -[#de350b]-> MLModelASL : Optimizes StaticASL_MLP Parameters
-MLTrainEval -[#de350b]-> MLModelISL : Optimizes StaticISL_MLP Parameters
-MLTrainEval -[#de350b]-> MLModelLSTM : Optimizes Dynamic Sequence LSTM Parameters
+MLTrainEval -[#880E4F]-> MLModelASL : Optimizes StaticASL_MLP Parameters
+MLTrainEval -[#4A148C]-> MLModelISL : Optimizes StaticISL_MLP Parameters
+MLTrainEval -[#311B92]-> MLModelLSTM : Optimizes Dynamic Sequence LSTM Parameters
 
-MLModelASL ..[#ff991f]..> StorageModels : Persists asl_static_mlp.pt Checkpoint
-MLModelISL ..[#ff991f]..> StorageModels : Persists isl_static_mlp.pt Checkpoint
-MLModelLSTM ..[#ff991f]..> StorageModels : Persists dynamic_lstm.pt Checkpoint
+MLModelASL ..[#01579B]..> StorageModels : Persists asl_static_mlp.pt Checkpoint
+MLModelISL ..[#006064]..> StorageModels : Persists isl_static_mlp.pt Checkpoint
+MLModelLSTM ..[#004D40]..> StorageModels : Persists dynamic_lstm.pt Checkpoint
 
-StorageModels ..[#de350b]..> ASLClass : Loads Trained Static MLP Models for Live Inference
-StorageModels ..[#de350b]..> DynamicLSTM : Loads Trained LSTM Model for Live Inference
+StorageModels ..[#3E2723]..> ASLClass : Loads Trained Static MLP Models for Live Inference
+StorageModels ..[#212121]..> DynamicLSTM : Loads Trained LSTM Model for Live Inference
 
 @enduml
