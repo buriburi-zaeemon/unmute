@@ -1,29 +1,28 @@
-# 🖐️ Unmute - Real-Time AI Sign Language Translator
+# 🖐️ Unmute - Real-Time AI Sign Language Translator (ASL + ISL)
 
-A real-time American Sign Language (ASL) translator powered by **Google MediaPipe**, **OpenCV**, **Scikit-learn**, and **FastAPI**, featuring **Live Camera Stream** and **Video File Upload** translation capabilities, with interactive practice challenges, custom gesture training, and subtitle export.
+A real-time bilingual **American Sign Language (ASL)** and **Indian Sign Language (ISL)** translator powered by **Google MediaPipe**, **PyTorch**, **OpenCV**, **Scikit-learn**, and **FastAPI**, featuring **Live Camera Stream** and **Video File Upload** translation capabilities, with interactive practice challenges, custom gesture training, and subtitle export.
 
 ---
 
 ## 🌟 Key Features
 
-1. **Dual Input Translation**:
+1. **Dual Sign Language Engines (ASL + ISL)**:
+   - 🇺🇸 **American Sign Language (ASL)**: Unimanual 109-dimensional geometric feature pipeline supporting 26 alphabets (A–Z), complete numerals (0–9), and static phrases (*I LOVE YOU, OKAY, PEACE, THUMBS UP, THUMBS DOWN, STOP*).
+   - 🇮🇳 **Indian Sign Language (ISL)**: Bimanual two-handed 218+ dimensional feature pipeline following **ISLRTC standards** (Ministry of Social Justice & Empowerment, Govt. of India) covering 26 bimanual alphabets (A–Z), numerals (0–9), and cultural phrases (*NAMASTE, I LOVE YOU, PEACE, OKAY, THUMBS UP, THUMBS DOWN, STOP*).
+   - 🔄 **Real-Time Language Switcher**: Toggle seamlessly between ASL and ISL on the live feed.
+2. **Dual Input Translation**:
    - **Live Webcam Translation**: Ultra-low-latency real-time video stream over WebSocket with glowing HUD landmark skeleton overlay, letter accumulator, sentence composer, and Text-To-Speech (TTS).
    - **Video File Translation**: Upload pre-recorded sign videos (MP4, WebM, MOV, AVI) for automated frame-by-frame analysis, timestamped interactive transcripts, synchronized subtitle playback, and `.srt`/`.vtt`/`.json`/`.txt` export.
-2. **Comprehensive ASL Vocabulary**:
-   - 🤖 **Continuous Hybrid Recognition Engine**: Real-time geometric and invariant feature classification of the full 26 ASL alphabet (**A–Z**), numbers (**0–9**), and dynamic multi-frame phrases (*HELLO, THANK YOU, YES, NO, PLEASE, I LOVE YOU, PEACE, THUMBS UP, STOP*).
 3. **Sign Visualizer & Guide Quality Overhaul**:
-   - 🖐️ **Interactive ASL Sign Visualizer**:
-     - **Live Guide Previews**: Every dictionary card renders a glowing cyber-neon 21-landmark hand skeleton.
-     - **Sign Inspector Modal**: High-res anatomical breakdown with joint-by-joint keypoints and direct "Practice This Sign" jump button.
-     - **Practice Studio Reference Pose**: Challenges display a side-by-side reference handshape so you can directly mirror the target sign.
-   - 🎯 **Gamified Practice Studio**: Real-time hand pose matching bar with score tracking, holding verification timer, and instant feedback.
+   - 🖐️ **Interactive Visualizer**: Live guide previews with glowing neon 21-landmark hand skeleton and high-resolution anatomical breakdowns.
+   - 🎯 **Gamified Practice Studio**: Real-time hand pose matching bar with score tracking and holding verification timer.
    - ⚡ **Ultra-Low Latency Pipeline**: Binary WebSocket transfer with ping-pong flow control and non-blocking worker threads achieving **~13.5ms round-trip response (74+ FPS)**.
 4. **Modern Dual-Theme UI**:
    - Clean, sky-blue **Light Mode** by default, with a complementary **Dark Mode** toggle, persisting via localStorage.
 5. **Custom Gesture Recorder & Trainer**:
    - Capture live samples of novel signs directly through the browser and train lightweight custom models in real-time.
-6. **ASL Visual Dictionary**:
-   - Comprehensive searchable reference library of handshapes, fingerspelling cards, and dynamic gesture explanations.
+6. **Bilingual Visual Dictionary**:
+   - Comprehensive searchable reference library of ASL and ISL handshapes, fingerspelling cards, and gesture explanations.
 
 ---
 
