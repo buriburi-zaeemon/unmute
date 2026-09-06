@@ -133,33 +133,63 @@ def id_to_label(class_id: int, language: Union[SignLanguage, str] = SignLanguage
     )
 
 
-def get_sign_category(label: str, language: Union[SignLanguage, str] = SignLanguage.ASL) -> str:
-    """Identifies the syntactic/lexical category of a sign label."""
+class SignType(str, Enum):
+    LETTER = "letter"
+    NUMBER = "number"
+    STATIC_PHRASE = "static_phrase"
+    DYNAMIC = "dynamic"
+    CONTROL = "control"
+    UNKNOWN = "unknown"
+
+
+def get_sign_type(label: str, language: Union[SignLanguage, str] = SignLanguage.ASL) -> SignType:
+    """Returns the strongly-typed SignType enum for a given label."""
     clean = str(label).strip().upper()
     lang = _normalize_lang(language)
+
     if lang == SignLanguage.ASL:
         if clean in ASL_ALPHABETS:
-            return "Alphabet"
+            return SignType.LETTER
         if clean in ASL_NUMERALS:
-            return "Numeral"
+            return SignType.NUMBER
         if clean in ASL_PHRASES:
-            return "Phrase"
+            return SignType.STATIC_PHRASE
         if clean in ASL_CONTROLS:
-            return "Control"
+            return SignType.CONTROL
         if clean in ASL_DYNAMIC_SIGNS:
-            return "Dynamic"
+            return SignType.DYNAMIC
     else:
         if clean in ISL_ALPHABETS:
-            return "Alphabet"
+            return SignType.LETTER
         if clean in ISL_NUMERALS:
-            return "Numeral"
+            return SignType.NUMBER
         if clean in ISL_PHRASES:
-            return "Phrase"
+            return SignType.STATIC_PHRASE
         if clean in ISL_CONTROLS:
-            return "Control"
+            return SignType.CONTROL
         if clean in ISL_DYNAMIC_SIGNS:
-            return "Dynamic"
-    return "Unknown"
+            return SignType.DYNAMIC
+
+    return SignType.UNKNOWN
+
+
+def get_sign_category(label: str, language: Union[SignLanguage, str] = SignLanguage.ASL) -> str:
+    """Identifies the syntactic/lexical category of a sign label."""
+    st = get_sign_type(label, language)
+    mapping = {
+        SignType.LETTER: "Alphabet",
+        SignType.NUMBER: "Numeral",
+        SignType.STATIC_PHRASE: "Phrase",
+        SignType.DYNAMIC: "Dynamic",
+        SignType.CONTROL: "Control",
+        SignType.UNKNOWN: "Unknown",
+    }
+    return mapping.get(st, "Unknown")
+
+
+def is_dynamic_token(label: str, language: Union[SignLanguage, str] = SignLanguage.ASL) -> bool:
+    """Returns True if the label is a sequence-based dynamic sign (handled by Contributor 2)."""
+    return get_sign_type(label, language) == SignType.DYNAMIC
 
 
 def is_bimanual_sign(label: str, language: Union[SignLanguage, str] = SignLanguage.ASL) -> bool:
@@ -174,3 +204,4 @@ def is_bimanual_sign(label: str, language: Union[SignLanguage, str] = SignLangua
     if clean in ISL_NUMERALS:
         return False
     return True
+
