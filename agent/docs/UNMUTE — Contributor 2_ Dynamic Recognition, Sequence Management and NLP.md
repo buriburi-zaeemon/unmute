@@ -482,29 +482,29 @@ Do not proceed until the pipeline is reviewed.
 
 ## WEEK 3 — Dynamic Dataset Preparation and Baseline
 
-Prepare actual dynamic training data.
+Prepare actual dynamic training data for both ASL and ISL.
 
 Tasks:
 
-1. Process selected dynamic sign samples.
-2. Extract landmark sequences.
-3. Verify feature consistency.
-4. Create reproducible dataset splits.
+1. Process selected dynamic sign samples for ASL (`HELLO`, `THANK YOU`, `YES`, `NO`, `PLEASE`, `J`, `Z`) and ISL (`HELLO`, `THANK YOU`, `YES`, `NO`, `PLEASE`, `HELP`, `WATER`).
+2. Extract unimanual landmark sequences for ASL and bimanual landmark sequences for ISL.
+3. Verify feature consistency (109 dims single-hand, 228 dims dual-hand).
+4. Create reproducible dataset splits for both languages.
 5. Confirm there is no frame-level leakage.
-6. Build the initial PyTorch Dataset/DataLoader.
-7. Validate tensor shapes.
-8. Establish a minimal baseline experiment.
+6. Build the initial PyTorch Dataset/DataLoader supporting both single-hand and dual-hand sequences.
+7. Validate tensor shapes across both language configurations.
+8. Establish minimal baseline experiments for both ASL and ISL.
 
 ### PAUSE-AND-REPORT CHECKPOINT — END OF WEEK 3
 
 Report:
 
-- Number of dynamic samples prepared
-- Dynamic classes
-- Tensor shape
+- Number of dynamic samples prepared (ASL and ISL)
+- Dynamic classes across both languages
+- Tensor shapes (single-hand vs dual-hand)
 - Split methodology
 - Whether signer separation is available
-- Data pipeline validation results
+- Data pipeline validation results for both languages
 - Known dataset limitations
 
 Do not claim model performance unless training has actually occurred.
@@ -513,17 +513,17 @@ Do not claim model performance unless training has actually occurred.
 
 ## WEEK 4 — LSTM Model Implementation
 
-Implement the dynamic recognition model.
+Implement the dynamic recognition model for both ASL and ISL.
 
 Tasks:
 
-1. Define the PyTorch LSTM architecture.
+1. Define the PyTorch LSTM architecture accommodating single-hand (109-dim ASL) and dual-hand (228-dim ISL) temporal sequences, or language-specific sequence heads.
 2. Implement the forward pass.
 3. Implement training and validation loops.
 4. Configure loss and optimizer.
-5. Add checkpoint saving.
-6. Add label mapping.
-7. Run an initial training experiment.
+5. Add checkpoint saving (`asl_dynamic_lstm.pt` and `isl_dynamic_lstm.pt`).
+6. Add label mapping for both ASL and ISL dynamic vocabularies.
+7. Run initial training experiments for both languages.
 
 Keep the model architecture explainable.
 
@@ -531,13 +531,13 @@ Keep the model architecture explainable.
 
 Report:
 
-- LSTM architecture
+- LSTM architecture (handling ASL and ISL)
 - Input/output tensor shapes
 - Training configuration
 - Loss function
 - Optimizer
 - Checkpoint format
-- Initial training results, if available
+- Initial training results for both languages, if available
 - Any errors or limitations
 
 Do not continue to major integration until the basic model pipeline works.
@@ -546,21 +546,21 @@ Do not continue to major integration until the basic model pipeline works.
 
 ## WEEK 5 — Dynamic Model Training and Evaluation
 
-Focus on actual experiments.
+Focus on actual experiments across both ASL and ISL.
 
 Tasks:
 
-1. Train the dynamic LSTM.
-2. Monitor training and validation behavior.
-3. Save the best checkpoint.
-4. Evaluate using unseen data.
-5. Generate:
+1. Train the dynamic LSTM models on ASL and ISL sequences.
+2. Monitor training and validation behavior for both languages.
+3. Save the best checkpoints (`asl_dynamic_lstm.pt` and `isl_dynamic_lstm.pt`).
+4. Evaluate using unseen data for both ASL and ISL.
+5. Generate for both ASL and ISL:
    - Accuracy
    - Precision
    - Recall
    - F1-score
    - Confusion matrix
-6. Document model failure cases.
+6. Document model failure cases (including unimanual vs bimanual motion tracking issues).
 
 Do not fabricate metrics.
 
@@ -568,30 +568,30 @@ Do not fabricate metrics.
 
 Report:
 
-- Training status
-- Best validation result
+- Training status for both languages
+- Best validation results (ASL and ISL)
 - Test results
 - Evaluation methodology
-- Confusion matrix
+- Confusion matrices for both languages
 - Known weak classes
 - Overfitting/underfitting observations
-- Checkpoint location
+- Checkpoint locations (`asl_dynamic_lstm.pt` and `isl_dynamic_lstm.pt`)
 
 ---
 
 ## WEEK 6 — Real-Time Dynamic Inference
 
-Begin integrating the trained model conceptually with the live pipeline.
+Begin integrating the trained models conceptually with the live pipeline.
 
 Tasks:
 
-1. Design a rolling temporal feature buffer.
-2. Load the trained LSTM once at startup.
-3. Convert buffered frames into model input.
-4. Perform dynamic inference.
-5. Add confidence extraction.
+1. Design rolling temporal feature buffers that accommodate both single-hand ASL streams and dual-hand ISL streams based on active language mode.
+2. Load the trained LSTM models once at startup.
+3. Convert buffered frames into model input conditioned on active language mode.
+4. Perform dynamic inference in real-time.
+5. Add confidence extraction for both languages.
 6. Add prediction stability handling.
-7. Preserve the existing application while integration is tested.
+7. Preserve the existing application and heuristic temporal tracker while integration is tested.
 
 Do not remove the existing temporal tracker until the replacement is verified.
 
@@ -599,49 +599,53 @@ Do not remove the existing temporal tracker until the replacement is verified.
 
 Report:
 
-- Real-time inference architecture
-- Buffer size and strategy
+- Real-time inference architecture for ASL and ISL
+- Buffer size and strategy for 1-hand and 2-hand inputs
 - Inference frequency
 - Model loading mechanism
 - Prediction output format
 - Stability mechanism
 - Integration dependencies
-- Current test status
+- Current test status across both languages
 
 ---
 
 ## WEEK 7 — Sequence Buffer and NLP
 
-Focus on converting recognized signs into meaningful language.
+Focus on converting recognized signs into meaningful language for both ASL and ISL.
 
 Tasks:
 
-1. Implement a structured sign sequence buffer.
+1. Implement a structured sign sequence buffer handling tokens from both ASL and ISL recognition engines.
 2. Implement duplicate suppression.
 3. Implement basic sign boundary handling.
-4. Define the interface between recognition and NLP.
-5. Implement rule-based sentence formation.
-6. Add vocabulary-specific grammar transformations.
-7. Test sequences using known recognition outputs.
-
-Example:
-
-```text
-["I", "GO", "HOME", "YESTERDAY"]
-        ↓
-"I went home yesterday."
-```
+4. Define the interface between recognition and NLP with language mode awareness (`mode: "ASL"` vs `mode: "ISL"`).
+5. Implement rule-based sentence formation for both languages.
+6. Add vocabulary-specific grammar transformations for both ASL and ISL:
+   - ASL Example:
+     ```text
+     ["I", "GO", "HOME", "YESTERDAY"]
+             ↓
+     "I went home yesterday."
+     ```
+   - ISL Example:
+     ```text
+     ["NAMASTE", "I", "HELP", "YOU"]
+             ↓
+     "Namaste, I will help you."
+     ```
+7. Test sequences using known recognition outputs from both languages.
 
 ### PAUSE-AND-REPORT CHECKPOINT — END OF WEEK 7
 
 Report:
 
-- Sequence-buffer design
+- Sequence-buffer design (handling ASL and ISL tokens)
 - Duplicate suppression strategy
 - Boundary handling strategy
-- NLP rules implemented
-- Supported sentence patterns
-- Example input/output sequences
+- NLP rules implemented for both languages
+- Supported sentence patterns (ASL and ISL)
+- Example input/output sequences for both languages
 - Limitations
 - Files created or modified
 
@@ -655,27 +659,27 @@ Prepare your modules for integration into the complete UNMUTE pipeline.
 
 Tasks:
 
-1. Test static/dynamic prediction interfaces with the backend contributor.
-2. Test sequence buffering with realistic recognition output.
-3. Test NLP processing.
-4. Measure relevant latency where possible.
+1. Test static/dynamic prediction interfaces for both ASL and ISL with the backend contributor.
+2. Test sequence buffering with realistic recognition output from both language modes.
+3. Test NLP processing across both ASL and ISL.
+4. Measure relevant latency where possible for single-hand and dual-hand sequences.
 5. Document failure cases.
-6. Prepare integration instructions.
+6. Prepare integration instructions for both language pipelines.
 7. Prepare final technical documentation.
 
 ### PAUSE-AND-REPORT CHECKPOINT — END OF WEEK 8
 
 Provide a final implementation report containing:
 
-- What was implemented
-- What was tested
+- What was implemented (ASL and ISL dynamic recognition)
+- What was tested across both languages
 - Actual model evaluation results
-- Dynamic recognition capabilities
+- Dynamic recognition capabilities (unimanual ASL and bimanual ISL)
 - Sequence-management capabilities
-- NLP capabilities
+- NLP capabilities across both languages
 - Remaining limitations
 - Exact files changed
-- Model/checkpoint locations
+- Model/checkpoint locations (`asl_dynamic_lstm.pt` and `isl_dynamic_lstm.pt`)
 - Integration instructions
 - Known issues
 - Recommended future improvements
@@ -709,8 +713,8 @@ Before considering your contribution complete, provide:
 # IMPORTANT RULES
 
 - Do not redesign the UI.
-- Do not switch ASL to ISL.
-- Do not claim unrestricted ASL translation.
+- Support both ASL and ISL concurrently; do not discard or switch away from ASL when adding ISL.
+- Do not claim unrestricted ASL or ISL translation.
 - Do not fabricate model metrics.
 - Do not claim signer-independent evaluation unless it actually occurred.
 - Do not leak frames from the same video into train and test sets.

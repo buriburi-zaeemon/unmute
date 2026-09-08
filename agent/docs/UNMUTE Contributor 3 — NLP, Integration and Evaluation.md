@@ -255,7 +255,7 @@ Do not begin major grammar implementation until the token interface is stable.
 
 ## Goals
 
-Implement the initial controlled-vocabulary sentence-processing layer.
+Implement the initial controlled-vocabulary sentence-processing layer for both ASL and ISL.
 
 The system must use deterministic and explainable transformations.
 
@@ -266,13 +266,13 @@ Do **NOT** hallucinate missing signs.
 The intended pipeline is:
 
 ```text
-Sign Tokens
+Sign Tokens (ASL / ISL)
 ↓
-Token Normalization
+Token Normalization & Language Tagging
 ↓
-Phrase Mapping
+Phrase Mapping (ASL & ISL Lexicons)
 ↓
-Basic Grammar Transformation
+Language-Specific Grammar Transformation (ASL / ISL Rules)
 ↓
 Capitalization
 ↓
@@ -281,29 +281,37 @@ Punctuation
 Final Sentence
 ```
 
-Example:
+Examples:
 
-```python
-["I", "GO", "HOME", "YESTERDAY"]
-```
+1. **ASL Example**:
+   ```python
+   ["I", "GO", "HOME", "YESTERDAY"]
+   ```
+   Could become:
+   ```text
+   I went home yesterday.
+   ```
 
-Could become:
+2. **ISL Example**:
+   ```python
+   ["NAMASTE", "I", "HELP", "YOU"]
+   ```
+   Could become:
+   ```text
+   Namaste, I will help you.
+   ```
 
-```text
-I went home yesterday.
-```
+This does not mean the system supports unrestricted ASL-to-English or ISL-to-English translation.
 
-This does not mean the system supports unrestricted ASL-to-English translation.
-
-It is a **controlled-vocabulary sentence-formation system**.
+It is a **controlled-vocabulary sentence-formation system** supporting both sign languages.
 
 ## Suggested Structure
 
 ```text
 nlp/
 ├── sentence_processor.py
-├── grammar_rules.py
-├── vocabulary.py
+├── grammar_rules.py        # Grammar rules for ASL and ISL
+├── vocabulary.py           # Controlled vocabularies for ASL and ISL
 └── tests/
 ```
 
@@ -311,14 +319,15 @@ You may adapt this structure if necessary.
 
 ## Requirements
 
-Implement explainable rules for supported patterns.
+Implement explainable rules for supported patterns across both languages.
 
 Examples may include:
 
-- Pronoun handling
+- Pronoun handling (ASL & ISL)
 - Basic verb transformations
-- Time-word positioning
-- Phrase mappings
+- Time-word positioning (ASL Topic-Time-Comment structure)
+- Subject-Object-Verb (SOV) structure adjustments for ISL
+- Phrase mappings (including ASL phrases and ISL phrases such as `NAMASTE`)
 - Capitalization
 - Punctuation
 
@@ -326,11 +335,11 @@ Every rule should be understandable and defensible in a viva.
 
 ## Deliverables
 
-- Working sentence processor
-- Vocabulary configuration
-- Grammar-rule module
-- Example transformations
-- Unit tests
+- Working sentence processor supporting both ASL and ISL
+- Vocabulary configuration for both languages
+- Grammar-rule module with language-aware dispatch
+- Example transformations for both ASL and ISL
+- Unit tests for both language pipelines
 
 ---
 
@@ -338,11 +347,11 @@ Every rule should be understandable and defensible in a viva.
 
 Report:
 
-1. Supported sentence patterns.
-2. Rules implemented.
-3. Example transformations.
+1. Supported sentence patterns for both ASL and ISL.
+2. Rules implemented across both languages.
+3. Example transformations (ASL and ISL).
 4. Unsupported patterns.
-5. Unit-test results.
+5. Unit-test results for both language pipelines.
 6. Known limitations.
 7. Any vocabulary assumptions that need confirmation from the ML contributors.
 
@@ -357,9 +366,9 @@ Do not claim unrestricted natural-language translation.
 Prepare clean integration points between:
 
 ```text
-Recognition
+Recognition (ASL / ISL)
 ↓
-Stable Sign Token
+Stable Sign Token (with language mode tag)
 ↓
 Sequence Buffer
 ↓
@@ -374,24 +383,24 @@ Inspect the current FastAPI architecture carefully.
 
 Prefer adding small, clean integration points rather than rewriting the backend.
 
-Coordinate shared changes with the contributor responsible for real-time recognition.
+Coordinate shared changes with the contributor responsible for real-time recognition, ensuring language mode selection (`mode: "ASL"` vs `mode: "ISL"`) is seamlessly propagated through the sequence buffer and sentence processor.
 
 ## Requirements
 
 If the final ML models are not yet available:
 
-- Use clearly labelled mock inputs for development and testing.
+- Use clearly labelled mock inputs for development and testing across both ASL and ISL.
 - Never present mock recognition as actual AI performance.
 
-The sentence-processing layer should be independently testable.
+The sentence-processing layer should be independently testable for both sign languages.
 
 ## Deliverables
 
-- Backend integration design
-- Sequence-buffer integration strategy
-- API/WebSocket contract where needed
+- Backend integration design supporting both ASL and ISL streams
+- Sequence-buffer integration strategy with language-mode awareness
+- API/WebSocket contract where needed (including language mode headers)
 - Minimal integration implementation where safe
-- Integration tests using controlled test tokens
+- Integration tests using controlled test tokens from both ASL and ISL
 
 ---
 
@@ -399,11 +408,11 @@ The sentence-processing layer should be independently testable.
 
 Report:
 
-1. Current integration architecture.
+1. Current integration architecture (supporting ASL and ISL).
 2. Exact integration points added or proposed.
-3. Whether the real recognition contributors can now provide tokens directly.
+3. Whether the real recognition contributors can now provide tokens directly for both languages.
 4. Backend files modified.
-5. Integration-test results.
+5. Integration-test results for both language flows.
 6. Remaining dependencies before full end-to-end integration.
 
 ---
@@ -412,7 +421,7 @@ Report:
 
 ## Goals
 
-Ensure the application speaks the **final processed sentence**, not raw sign tokens.
+Ensure the application speaks the **final processed sentence**, not raw sign tokens, for both ASL and ISL.
 
 The existing application already uses:
 
@@ -427,15 +436,15 @@ Do **NOT** replace it with `pyttsx3` unless the team explicitly changes the appl
 The desired flow is:
 
 ```text
-Recognized Sign Sequence
+Recognized Sign Sequence (ASL / ISL)
 ↓
-Sentence Processing
+Sentence Processing (Language-Specific Rules)
 ↓
 Final Sentence
 ↓
 Display
 ↓
-Speak
+Speak (Browser Speech Synthesis)
 ↓
 Replay / Clear
 ```
@@ -444,11 +453,11 @@ Replay / Clear
 
 Inspect and improve the connection between:
 
-- Processed sentence
-- Frontend display
-- Speech synthesis
-- Replay behavior
-- Clear behavior
+- Processed sentence (ASL and ISL)
+- Frontend display and subtitle rendering
+- Speech synthesis (with language/voice selection where available)
+- Replay behavior for both languages
+- Clear behavior for both languages
 
 Do not redesign the UI unnecessarily.
 
@@ -456,11 +465,11 @@ Focus on functional correctness.
 
 ## Deliverables
 
-- Final sentence passed correctly to frontend
-- Speech uses processed output
+- Final sentence passed correctly to frontend for both ASL and ISL
+- Speech uses processed output across both language modes
 - Clear behavior resets relevant state
-- Replay uses the intended final sentence
-- Relevant tests or manual test procedure
+- Replay uses the intended final sentence for both languages
+- Relevant tests or manual test procedures covering both ASL and ISL
 
 ---
 
@@ -468,11 +477,11 @@ Focus on functional correctness.
 
 Report:
 
-1. Whether processed sentences reach the frontend correctly.
-2. Whether speech uses processed sentences.
+1. Whether processed sentences reach the frontend correctly for both ASL and ISL.
+2. Whether speech uses processed sentences across both language modes.
 3. Clear/replay behavior.
 4. Files changed.
-5. Manual tests performed.
+5. Manual tests performed for ASL and ISL.
 6. Remaining integration problems.
 
 ---
@@ -481,7 +490,7 @@ Report:
 
 ## Goals
 
-Strengthen the system testing strategy.
+Strengthen the system testing strategy across both ASL and ISL.
 
 Clearly separate:
 
@@ -489,10 +498,10 @@ Clearly separate:
 
 Test:
 
-- Sentence processing
-- Token normalization
-- Grammar rules
-- Phrase mappings
+- Sentence processing (ASL and ISL grammar rules)
+- Token normalization & language tagging
+- Grammar rules (ASL topic-comment, ISL SOV adjustments)
+- Phrase mappings (ASL and ISL lexicons)
 - API contracts
 
 ### Integration Tests
@@ -500,7 +509,7 @@ Test:
 Test:
 
 ```text
-Recognition Output
+Recognition Output (ASL / ISL)
 ↓
 Sequence Buffer
 ↓
@@ -521,12 +530,12 @@ Do not confuse software tests with recognition accuracy.
 
 Add or improve tests without modifying another contributor's ML implementation unnecessarily.
 
-Where possible, create controlled integration tests using known sign tokens.
+Where possible, create controlled integration tests using known sign tokens from both ASL and ISL.
 
 ## Deliverables
 
-- NLP unit tests
-- Integration tests
+- NLP unit tests covering both ASL and ISL rules
+- Integration tests for both language pipelines
 - Documented test categories
 - Clear distinction between software correctness and model accuracy
 
@@ -536,11 +545,11 @@ Where possible, create controlled integration tests using known sign tokens.
 
 Report:
 
-1. Tests added.
+1. Tests added (ASL and ISL).
 2. Tests passing.
 3. Tests failing.
-4. Integration status with Contributor 1.
-5. Integration status with Contributor 2.
+4. Integration status with Contributor 1 (ASL & ISL static models).
+5. Integration status with Contributor 2 (ASL & ISL dynamic models).
 6. Any blockers affecting the final system.
 7. What must be completed during Weeks 7 and 8.
 
@@ -550,7 +559,7 @@ Report:
 
 ## Goals
 
-Prepare and execute the overall system evaluation framework where the required components are available.
+Prepare and execute the overall system evaluation framework where the required components are available for both ASL and ISL.
 
 The eventual system should evaluate:
 
@@ -562,32 +571,32 @@ The eventual system should evaluate:
 - F1-score
 - Confusion matrix
 
-These are primarily owned by the ML contributors.
+These are primarily owned by the ML contributors for both ASL and ISL models.
 
 ### System Metrics
 
 Measure where possible:
 
-- Inference latency
-- FPS
+- Inference latency (single-hand ASL vs dual-hand ISL)
+- FPS across both pipelines
 - End-to-end response time
 
 ### Robustness
 
-Where practical, test:
+Where practical, test across both ASL (unimanual) and ISL (bimanual):
 
 - Different users
 - Different lighting
 - Different backgrounds
 - Different distances
-- Different orientations
+- Different orientations and inter-hand occlusions (ISL)
 
 ### Sentence-Level Evaluation
 
 Evaluate whether:
 
 ```text
-Recognized Sign Sequence
+Recognized Sign Sequence (ASL / ISL)
 ```
 
 is transformed into a sentence that preserves the intended meaning.
@@ -614,7 +623,7 @@ Document:
 - How it is measured
 - Which contributor owns each metric
 - What data is required
-- Actual results versus planned evaluation
+- Actual results versus planned evaluation for both ASL and ISL
 
 ---
 
@@ -623,11 +632,11 @@ Document:
 Report:
 
 1. Evaluation framework completed.
-2. Actual metrics collected.
+2. Actual metrics collected for both ASL and ISL.
 3. Metrics still unavailable.
-4. System-level test results.
-5. Robustness-test results.
-6. Sentence-level evaluation results.
+4. System-level test results (latency and FPS for ASL vs ISL).
+5. Robustness-test results across both languages.
+6. Sentence-level evaluation results for ASL and ISL.
 7. Any limitations discovered during testing.
 
 Clearly label all results as:
@@ -642,7 +651,7 @@ Clearly label all results as:
 
 ## Goals
 
-Support final end-to-end integration of the UNMUTE system.
+Support final end-to-end integration of the UNMUTE system across both ASL and ISL.
 
 The intended overall flow is:
 
@@ -651,32 +660,32 @@ Webcam
 ↓
 MediaPipe
 ↓
-Landmark Extraction
+Landmark Extraction (1 or 2 Hands)
 ↓
-Feature Engineering
+Feature Engineering (109-dim ASL / 228-dim ISL)
 ↓
-Static/Dynamic Recognition
+Static/Dynamic Recognition (ASL / ISL)
 ↓
-Stable Sign Tokens
+Stable Sign Tokens (with language mode tag)
 ↓
 Sequence Buffer
 ↓
-Sentence Formation
+Sentence Formation (Language-Specific Rules)
 ↓
 Final English Sentence
 ↓
 Browser Speech
 ```
 
-Do not claim that the system performs unrestricted ASL translation unless this has genuinely been implemented and evaluated.
+Do not claim that the system performs unrestricted ASL or ISL translation unless this has genuinely been implemented and evaluated.
 
 ## Tasks
 
-1. Verify integration with both static and dynamic recognition contributors.
-2. Test supported end-to-end sequences.
-3. Verify sentence formation.
-4. Verify frontend output.
-5. Verify speech output.
+1. Verify integration with both static and dynamic recognition contributors for both ASL and ISL.
+2. Test supported end-to-end sequences in both language modes.
+3. Verify sentence formation across both languages.
+4. Verify frontend output and mode switching.
+5. Verify speech output for both languages.
 6. Document limitations and known failure cases.
 7. Prepare a concise integration guide for the team.
 
@@ -685,15 +694,15 @@ Do not claim that the system performs unrestricted ASL translation unless this h
 Provide:
 
 1. Current text accumulation audit.
-2. Structured token interface specification.
-3. Rule-based sentence processor.
-4. Grammar and phrase transformation rules.
-5. Unit tests.
-6. Integration design for FastAPI.
+2. Structured token interface specification (handling ASL and ISL).
+3. Rule-based sentence processor supporting both languages.
+4. Grammar and phrase transformation rules for ASL and ISL.
+5. Unit tests for both language pipelines.
+6. Integration design for FastAPI supporting language mode switching.
 7. Speech integration with final sentences.
-8. Evaluation framework.
-9. Documentation of supported sentence patterns.
-10. Known limitations.
+8. Evaluation framework covering both languages.
+9. Documentation of supported sentence patterns (ASL and ISL).
+10. Known limitations of each language pipeline.
 
 ---
 
@@ -703,14 +712,14 @@ Before declaring your contribution complete, stop and provide a comprehensive im
 
 ## What Was Implemented
 
-Clearly list every completed component.
+Clearly list every completed component for both ASL and ISL.
 
 ## What Was Tested
 
 Include:
 
-- Unit tests
-- Integration tests
+- Unit tests (ASL and ISL)
+- Integration tests across both modes
 - Manual tests
 - End-to-end tests
 
@@ -728,22 +737,22 @@ Do not invent:
 
 ## Supported Sign-Token Patterns
 
-Document exactly which patterns the sentence processor supports.
+Document exactly which patterns the sentence processor supports for ASL and ISL.
 
 ## Sentence Transformation Examples
 
-Show realistic input/output examples.
+Show realistic input/output examples for both ASL and ISL.
 
 ## Rules Implemented
 
-Explain the deterministic language-processing rules.
+Explain the deterministic language-processing rules for both languages.
 
 ## Integration Points
 
 Explain:
 
-- What Contributor 1 provides
-- What Contributor 2 provides
+- What Contributor 1 provides (ASL and ISL static models)
+- What Contributor 2 provides (ASL and ISL dynamic models)
 - What this component expects
 - How the frontend receives the final result
 
@@ -755,7 +764,7 @@ List every created or modified file.
 
 Clearly document:
 
-- Controlled vocabulary limitations
+- Controlled vocabulary limitations (ASL and ISL)
 - Unsupported grammar patterns
 - Recognition dependencies
 - Any incomplete integration
@@ -802,7 +811,7 @@ Coordinate shared backend changes before making them.
 
 # IMPORTANT RULES
 
-- Do not claim unrestricted ASL-to-English translation.
+- Do not claim unrestricted ASL-to-English or ISL-to-English translation.
 - Do not use an LLM to guess missing signs.
 - Do not invent model performance metrics.
 - Do not redesign the existing web UI unnecessarily.

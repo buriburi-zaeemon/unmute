@@ -101,13 +101,13 @@ The model may be retained as a **legacy baseline**, but do not make it the final
 
 ## 3. Dataset Strategy
 
-UNMUTE is currently focused on **American Sign Language**.
+UNMUTE is currently focused on **American Sign Language (ASL)** and **Indian Sign Language (ISL)**.
 
-Research and select a practical dataset for the initial controlled vocabulary.
+Research and select practical datasets for the initial controlled vocabularies.
 
-The dataset should be suitable for:
+The datasets should be suitable for:
 
-- ASL recognition
+- ASL and ISL recognition
 - A semester-scale project
 - Landmark extraction
 - Static sign classification
@@ -396,7 +396,7 @@ Before beginning Week 3, stop and report:
 - Dataset file structure.
 - Train/validation/test split strategy.
 - Any data quality problems.
-- Any incompatibility between the dataset and the current 109-dimensional feature pipeline.
+- Any incompatibility between the dataset and the current feature pipeline.
 - Exact files created or modified.
 
 Do not proceed with model training until the dataset pipeline is understandable and reproducible.
@@ -407,28 +407,30 @@ Do not proceed with model training until the dataset pipeline is understandable 
 
 Focus on:
 
-- Creating the PyTorch Dataset and DataLoader.
-- Implementing the static MLP.
-- Implementing label encoding and decoding.
-- Implementing the training loop.
-- Implementing validation.
-- Adding checkpoint saving.
-- Ensuring the model can later be loaded independently for inference.
+- Creating the PyTorch Dataset and DataLoader for both ASL (109-dim) and ISL (228-dim).
+- Implementing the static MLPs:
+  - `StaticASL_MLP` for unimanual ASL recognition (109-dim input, 41 classes).
+  - `StaticISL_MLP` for bimanual ISL recognition (228-dim input, 44 classes).
+- Implementing label encoding and decoding for both ASL and ISL canonical vocabularies.
+- Implementing the training loop for both ASL and ISL models.
+- Implementing validation for both models.
+- Adding checkpoint saving (`asl_static_mlp.pt` and `isl_static_mlp.pt`).
+- Ensuring the models can later be loaded independently for inference.
 
-Keep the architecture simple and explainable.
+Keep the architectures simple and explainable.
 
 ### ⏸ PAUSE-AND-REPORT CHECKPOINT — END OF WEEK 3
 
 Before beginning Week 4, stop and report:
 
-- Final MLP architecture.
-- Input feature dimensionality.
-- Number of output classes.
+- Final MLP architectures (ASL and ISL).
+- Input feature dimensionalities (109-dim ASL, 228-dim ISL).
+- Number of output classes (41 classes for ASL, 44 classes for ISL).
 - Loss function.
 - Optimizer.
-- Checkpoint strategy.
+- Checkpoint strategy for both models.
 - Training pipeline status.
-- Whether a complete training run has successfully started.
+- Whether complete training runs have successfully started for both ASL and ISL.
 - Any errors or performance bottlenecks.
 - Exact files created or modified.
 
@@ -438,32 +440,32 @@ Before beginning Week 4, stop and report:
 
 Focus on:
 
-- Running initial training experiments.
-- Monitoring training and validation loss.
-- Checking for overfitting.
-- Saving the best checkpoint.
-- Running genuine evaluation on held-out data.
-- Generating:
+- Running initial training experiments for both ASL and ISL models.
+- Monitoring training and validation loss for both models.
+- Checking for overfitting on both datasets.
+- Saving the best checkpoints (`asl_static_mlp.pt` and `isl_static_mlp.pt`).
+- Running genuine evaluation on held-out data for both ASL and ISL.
+- Generating for both ASL and ISL:
   - Accuracy
   - Precision
   - Recall
   - F1-score
   - Confusion matrix
 
-Do not optimize endlessly for accuracy. First establish a reliable baseline.
+Do not optimize endlessly for accuracy. First establish reliable baselines for both languages.
 
 ### ⏸ PAUSE-AND-REPORT CHECKPOINT — END OF WEEK 4
 
 Before beginning Week 5, stop and report:
 
-- Whether training completed successfully.
-- Actual metrics obtained.
+- Whether training completed successfully for both ASL and ISL.
+- Actual metrics obtained for both ASL and ISL models.
 - Training versus validation behavior.
 - Signs of overfitting or underfitting.
-- Classes that perform poorly.
-- Confusion matrix observations.
-- Location of the best model checkpoint.
-- Whether the model is ready for backend integration.
+- Classes that perform poorly in ASL and ISL.
+- Confusion matrix observations for both languages.
+- Locations of the best model checkpoints (`asl_static_mlp.pt` and `isl_static_mlp.pt`).
+- Whether the models are ready for backend integration.
 
 Never report estimated, theoretical, or fabricated accuracy values.
 
@@ -473,12 +475,12 @@ Never report estimated, theoretical, or fabricated accuracy values.
 
 Focus on:
 
-- Investigating weak classes.
-- Improving preprocessing where justified.
-- Adjusting the MLP architecture only if necessary.
-- Improving data quality or class balance where feasible.
-- Comparing against the legacy Random Forest baseline if technically meaningful.
-- Testing on samples not used during training.
+- Investigating weak classes in both ASL and ISL (including bimanual contact and occlusion patterns in ISL).
+- Improving preprocessing where justified for 109-dim single-hand and 228-dim dual-hand pipelines.
+- Adjusting the MLP architectures only if necessary.
+- Improving data quality or class balance where feasible across both datasets.
+- Comparing ASL against the legacy Random Forest baseline if technically meaningful.
+- Robustness testing on samples not used during training, including single-hand fallback scenarios for ISL.
 
 Avoid unnecessary complexity.
 
@@ -486,31 +488,31 @@ Avoid unnecessary complexity.
 
 Stop and report:
 
-- Baseline versus improved model comparison.
+- Baseline versus improved model comparison for both ASL and ISL.
 - Any preprocessing changes.
 - Any architecture changes.
-- Actual improvement or regression in evaluation metrics.
-- Final recommendation for the static recognition model.
-- Known limitations and failure cases.
+- Actual improvement or regression in evaluation metrics across both languages.
+- Final recommendations for the static recognition models.
+- Known limitations and failure cases (unimanual vs bimanual).
 
-At this point, the team should be able to decide whether the static model is sufficiently reliable for integration.
+At this point, the team should be able to decide whether the static models are sufficiently reliable for integration.
 
 ---
 
 ## WEEK 6 — Integration Preparation
 
-Focus on preparing the static model for the contributor responsible for backend integration.
+Focus on preparing the static models for the contributor responsible for backend integration.
 
 Provide:
 
-- Saved PyTorch model checkpoint.
-- Label mapping.
-- Model-loading instructions.
-- Expected input format.
-- Expected feature dimensionality.
-- Prediction output format.
-- Confidence/probability handling.
-- A minimal inference example.
+- Saved PyTorch model checkpoints (`asl_static_mlp.pt` and `isl_static_mlp.pt`).
+- Label mappings for both ASL and ISL.
+- Model-loading instructions for both models.
+- Expected input formats and language mode selection (`mode: "ASL"` vs `mode: "ISL"`).
+- Expected feature dimensionalities (109 dims for ASL, 228 dims for ISL).
+- Prediction output format and class probability distributions.
+- Confidence/probability handling and thresholding.
+- Minimal inference examples for both ASL and ISL.
 
 Do not heavily modify the backend unless explicitly coordinated with the backend contributor.
 
@@ -518,11 +520,11 @@ Do not heavily modify the backend unless explicitly coordinated with the backend
 
 Stop and report:
 
-- Integration readiness status.
+- Integration readiness status for both ASL and ISL models.
 - Exact files required by the backend contributor.
-- Example inference code.
+- Example inference code for both languages.
 - Dependencies required.
-- Any compatibility concerns with the existing FastAPI pipeline.
+- Any compatibility concerns with the existing FastAPI pipeline and language switcher.
 - Remaining integration risks.
 
 ---
@@ -533,11 +535,11 @@ Coordinate with the contributor integrating the model into the real-time system.
 
 Focus on:
 
-- Supporting backend integration.
-- Verifying that live MediaPipe features match training features.
-- Testing real-time predictions.
-- Identifying training-versus-inference preprocessing mismatches.
-- Testing with different users where possible.
+- Supporting backend integration for both ASL and ISL pipelines.
+- Verifying that live MediaPipe features match training features (single-hand 109 dims for ASL, dual-hand 228 dims for ISL).
+- Testing real-time predictions in both ASL and ISL live modes.
+- Identifying training-versus-inference preprocessing mismatches across both languages.
+- Testing with different users where possible on both unimanual and bimanual signs.
 
 Do not claim signer-independent performance unless the evaluation design genuinely supports that claim.
 
@@ -545,10 +547,10 @@ Do not claim signer-independent performance unless the evaluation design genuine
 
 Stop and report:
 
-- Whether the trained MLP successfully runs in the real-time pipeline.
-- Any integration bugs encountered.
-- Training-versus-live feature compatibility.
-- Real-world observations.
+- Whether the trained ASL and ISL MLPs successfully run in the real-time pipeline.
+- Any integration bugs encountered in either language mode.
+- Training-versus-live feature compatibility for 1-hand and 2-hand detection.
+- Real-world observations for ASL and ISL.
 - Known failure cases.
 - Remaining work before final completion.
 
@@ -558,28 +560,28 @@ Stop and report:
 
 Focus on:
 
-- Final model evaluation.
-- Documenting actual results.
+- Final model evaluation for both ASL and ISL.
+- Documenting actual results for both languages.
 - Cleaning unnecessary experimental files.
-- Ensuring reproducibility.
-- Preparing documentation for the final report and presentation.
+- Ensuring reproducibility of both training pipelines.
+- Preparing documentation for the final report and presentation covering dual-language capabilities.
 - Clearly separating implemented functionality from future work.
 
 ### ⏸ FINAL PAUSE-AND-REPORT CHECKPOINT — END OF WEEK 8
 
 Provide a final contributor handover report containing:
 
-1. What was implemented.
-2. What was tested.
-3. Actual evaluation results.
-4. Dataset used.
+1. What was implemented (ASL and ISL).
+2. What was tested across both languages.
+3. Actual evaluation results for both ASL and ISL models.
+4. Datasets used for both languages.
 5. Train/validation/test methodology.
-6. Final MLP architecture.
-7. Final model checkpoint location.
-8. Label mapping location.
+6. Final MLP architectures (`StaticASL_MLP` and `StaticISL_MLP`).
+7. Final model checkpoint locations (`asl_static_mlp.pt` and `isl_static_mlp.pt`).
+8. Label mapping locations for both languages.
 9. Exact files created or modified.
-10. Backend integration instructions.
-11. Known limitations.
+10. Backend integration instructions for both language modes.
+11. Known limitations of each language model.
 12. What remains incomplete.
 13. What should be presented honestly as implemented versus planned.
 
