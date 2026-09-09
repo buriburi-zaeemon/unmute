@@ -906,3 +906,37 @@ The visualizer and practice canvas have adopted a standardized color hierarchy f
 - **Port Conflict Prevention**: To prevent clashes with standard ports (8080, 8000, 3000) used by other local development servers and proxies, UNMUTE now hardcodes and defaults to port **8505** in 
 un.py and stop.py.
 - **Integration & Evaluation Requirement**: All automated test suites, end-to-end evaluation harnesses (valuation/system_metrics.py), WebSocket integration tests, and benchmark scripts must target port **8505** (http://localhost:8505).
+
+
+---
+
+# ACTIONABLE SCHEDULE INTEGRATION: FIT NEW ADDITIONS INTO CONTRIBUTOR 3 ROADMAP (WEEKS 3-8)
+
+## Instructions for Contributor 3 and Assigned AI Agents
+Contributor 1 has finalized and integrated three core architectural foundations:
+1. **Universal Person-Invariant Recognition Engine** (`sign_engine/asl_classifier.py`): Self-Phalange Bone Ratio normalization & directional phalanx collinearity.
+2. **Three.js WebGL Volumetric 3D Hand Visualizer & OrbitControls** (`static/app.js`): Real 3D meshes, translucent cybernetic palm plate, 5-finger color hierarchy, camera presets, and cubic-eased animated guide.
+3. **Dedicated Hardcoded Port 8505** (`run.py`, `stop.py`, `http://localhost:8505`): Complete avoidance of port 8080/8000 collisions.
+
+You MUST schedule and integrate these additions into your weekly deliverables as follows:
+
+### Week 3 — Rule-Based Sentence Formation & Practice Studio 3D Integration
+- **Practice Challenge Alignment**: In `static/app.js` and the Practice Studio evaluation flow, utilize the in-card WebGL 3D visualizer (`#practice-target-canvas`) with presets (`Isometric`, `Front`, `Side`) and animation toggle (`#btn-practice-anim-toggle`).
+- **Interactive Sign Guide Launcher**: Ensure that clicking words in sentence compositions or practice cards triggers `openInspectorModal(signName)` to display the 3D WebGL hand model with 5-finger color-coded keypoints.
+
+### Week 4 — FastAPI Server Integration & Port 8505 Standard
+- **Dedicated Port 8505 Binding**: Update all test clients (`fastapi.testclient.TestClient`), background task launchers, and API documentation to communicate exclusively via `http://localhost:8505` and `ws://127.0.0.1:8505`.
+- **System Health & REST Testing**: Ensure `GET /api/status` and `POST /api/predict-frame` test suites pass under port 8505 without conflicts.
+
+### Week 5 — Speech Flow & Frontend 3D HUD Synchronization
+- **5-Finger Color Badging**: Apply the standardized color system across all subtitle overlays, sentence composer tags, and TTS feedback cards:
+  - Thumb: `#ff9f1c` | Index: `#00f0ff` | Middle: `#20bf6b` | Ring: `#9b5de5` | Pinky: `#f72585`.
+- **WebGL Context Lifecycle**: In single-page tab transitions (`camera-tab`, `practice-tab`, `dictionary-tab`), ensure WebGL contexts are properly maintained without memory leaks.
+
+### Week 6 & Week 7 — End-to-End Testing & System Evaluation Framework
+- **Diverse Hand Geometry Evaluation**: In `evaluation/system_metrics.py` and test harnesses, benchmark recognition accuracy across varying hand proportions (slender fingers, broad palms, short fingers).
+- **Latency & Throughput Verification**: Measure round-trip inference latency over WebSockets on port 8505 (target: < 20ms, 60+ FPS).
+- **3D Render Performance Audit**: Verify that Three.js WebGL rendering maintains 60 FPS without GPU throttling during live video inference.
+
+### Week 8 — Final System Validation & Documentation Handover
+- **Cross-Platform Port Validation**: Verify that `start.bat`, `start.ps1`, `python run.py`, and `stop.py` reliably launch and terminate on port `8505` across Windows, macOS, and Linux without port clashes.

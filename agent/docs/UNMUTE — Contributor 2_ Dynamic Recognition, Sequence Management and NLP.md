@@ -814,3 +814,37 @@ All visualization layers (including dynamic gesture trajectory trails, attention
 - **Port Conflict Prevention**: To prevent clashes with standard ports (8080, 8000, 3000) used by other local development servers and proxies, UNMUTE now hardcodes and defaults to port **8505** in 
 un.py and stop.py.
 - **Integration Requirement**: All WebSocket connections (ws://127.0.0.1:8505/ws/...), REST API calls, and integration test suites should target port **8505** (http://localhost:8505).
+
+
+---
+
+# ACTIONABLE SCHEDULE INTEGRATION: FIT NEW ADDITIONS INTO CONTRIBUTOR 2 ROADMAP (WEEKS 3-8)
+
+## Instructions for Contributor 2 and Assigned AI Agents
+Contributor 1 has deployed three major platform capabilities:
+1. **Universal Invariant Recognition Engine** (`sign_engine/asl_classifier.py`) based on Self-Phalange Bone Length Normalization ($||\mathbf{p}_{\text{TIP}} - \mathbf{p}_{\text{MCP}}|| / \sum \text{phalange segments}$) and Directional Phalanx Collinearity.
+2. **Three.js WebGL Volumetric 3D Hand Model & OrbitControls** (`static/app.js`, `static/three.min.js`, `static/OrbitControls.js`) featuring 21 lit joint spheres, bone cylinders, translucent palm plate, camera presets, and cubic-eased dynamic hand formation animations.
+3. **Dedicated Hardcoded Port 8505** (`run.py`, `stop.py`, `http://localhost:8505`) eliminating all local port clashes with 8080/8000/3000.
+
+You MUST integrate these additions directly into your upcoming schedule as follows:
+
+### Week 3 — Sequence Modeling & Invariant Dynamic Feature Dataset
+- **Self-Phalange Normalization for Trajectories**: In your temporal sequence feature pipeline (`ml/data/prepare_dynamic_dataset.py`), do NOT normalize coordinates by raw bounding box pixels or palm ratios. Apply Contributor 1's invariant phalanx vector normalization across each frame in the rolling window (T = 30) so dynamic gestures (`HELLO`, `THANK YOU`, `YES`, `NO`) remain invariant to signer hand size and distance.
+- **Dynamic Dataset Export**: Ensure sequence `.npz` archives use the 109-dim (ASL) and 228-dim (ISL) feature vectors generated from the normalized landmarks.
+
+### Week 4 — Real-Time Dynamic Inference & High-Contrast 5-Finger Palette
+- **Fingertip Motion Path Overlays**: When rendering historical motion trails in `temporal_tracker.py` or the client HUD:
+  - Thumb trajectory: `#ff9f1c` (Amber)
+  - Index trajectory: `#00f0ff` (Cyan)
+  - Middle trajectory: `#20bf6b` (Green)
+  - Ring trajectory: `#9b5de5` (Purple)
+  - Pinky trajectory: `#f72585` (Hot Pink)
+- **Port 8505 Client Socket**: Connect real-time dynamic inference WebSockets to `ws://127.0.0.1:8505/ws/live-stream`.
+
+### Week 5 & Week 6 — Multi-Modal Fusion & Sequence-to-3D Guide Interaction
+- **Compound Sign 3D Guide Dispatch**: When the sequence accumulator recognizes dynamic multi-sign glosses (e.g. `["HELLO", "THANK YOU"]`), expose structured tokens so the UI can invoke `openInspectorModal(signName)` for any token, allowing signers to view the WebGL 3D volumetric model and play the formation animation guide.
+- **Port 8505 Test Client**: Configure all integration tests to target `http://localhost:8505`.
+
+### Week 7 & Week 8 — Dynamic Model Evaluation & Final Delivery
+- **Signer Invariance Benchmarking**: Evaluate dynamic recognition accuracy across diverse signers (slender, broad, and child hands) to verify that sequence models maintain the invariance guarantees established by Contributor 1.
+- **Zero-Port-Clash Launch**: Ensure all scripts run out-of-the-box on dedicated port `8505`.

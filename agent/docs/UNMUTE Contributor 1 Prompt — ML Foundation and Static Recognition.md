@@ -658,3 +658,26 @@ At the end, provide a clear implementation report stating:
    - Hardcoded UNMUTE_PORT = 8505 in 
 un.py and stop.py to prevent port collisions with 8080, 8000, and 3000.
    - All client relative routing and documentation synchronized to port 8505.
+
+
+---
+
+# ACTIONABLE SCHEDULE STATUS & HANDOFF MATRIX (CONTRIBUTOR 1)
+
+## Delivered Components in Main Baseline:
+1. **Universal Invariant Recognition Engine** (`sign_engine/asl_classifier.py`):
+   - Self-Phalange Bone Ratio Normalization ($||\mathbf{p}_{\text{TIP}} - \mathbf{p}_{\text{MCP}}|| / \sum \text{bones}$).
+   - Directional Phalanx Collinearity ($\mathbf{v}_{\text{prox}} \cdot \mathbf{v}_{\text{dist}} > 0.35$).
+   - Invariant unit tests in `tests/test_sign_engine.py` (39/39 passing).
+2. **Three.js WebGL Volumetric 3D Hand Visualizer & OrbitControls**:
+   - `static/three.min.js` and `static/OrbitControls.js` staged locally.
+   - Volumetric joint spheres, bone cylinders, translucent palm plate.
+   - Smooth 360° mouse drag, wheel zoom, camera presets, and cubic-eased animation guide.
+   - Deployed in 3D Inspector Modal, Practice Studio Card, and Live Camera Widget.
+3. **Dedicated Port 8505**:
+   - Hardcoded `UNMUTE_PORT = 8505` in `run.py` and `stop.py`.
+   - Complete avoidance of port 8080/8000 collisions.
+
+## Handoff Coordination for Contributors 2 & 3:
+- Contributor 2 can consume normalized landmarks for rolling dynamic sequence models in Weeks 3–6.
+- Contributor 3 can connect NLP sentence tokens and Practice Studio verification to the WebGL 3D Inspector on port 8505 in Weeks 3–8.
