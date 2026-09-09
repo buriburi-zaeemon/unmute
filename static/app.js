@@ -852,6 +852,380 @@ function interpolate3DLandmarks(lmsA, lmsB, t) {
   });
 }
 
+// ================= THREE.JS REAL 3D HAND VISUALIZER =================
+// True WebGL volumetric 3D hand mesh with lit joints, bones, cybernetic palm plate, OrbitControls, and camera presets
+class ThreeHandVisualizer {
+  constructor(canvas, options = {}) {
+    if (!canvas) return;
+    this.canvas = canvas;
+    this.options = Object.assign({
+      width: canvas.width || 280,
+      height: canvas.height || 280,
+      canOrbit: true,
+      canZoom: true,
+      defaultView: 'front',
+      enableDamping: true,
+      showPalm: true,
+      scale: 1.0,
+      onPresetChanged: null
+    }, options);
+
+    this.activeSign = 'A';
+    this.targetLms = null;
+    this.neutralLms = (typeof getNeutralHandLandmarks === 'function') ? getNeutralHandLandmarks() : null;
+    this.isAnimating = false;
+    this.animStartTime = 0;
+    this.reqId = null;
+
+    this.presets = {
+      front: { pos: { x: 0, y: 0.05, z: 2.7 }, target: { x: 0, y: 0.05, z: 0 } },
+      side: { pos: { x: 2.5, y: 0.15, z: 0.6 }, target: { x: 0, y: 0.05, z: 0 } },
+      top: { pos: { x: 0, y: 2.5, z: 0.4 }, target: { x: 0, y: 0.05, z: 0 } },
+      isometric: { pos: { x: 1.5, y: 1.2, z: 1.9 }, target: { x: 0, y: 0.05, z: 0 } }
+    };
+
+    this.targetCamPos = null;
+    this.targetCamTarget = null;
+    this.isTransitioningCam = false;
+
+    this.initThree();
+  }
+
+  initThree() {
+    if (typeof THREE === 'undefined') {
+      console.warn('THREE is not defined, WebGL 3D unavailable');
+      return;
+    }
+
+    const w = this.options.width;
+    const h = this.options.height;
+
+    this.scene = new THREE.Scene();
+    this.camera = new THREE.PerspectiveCamera(40, w / h, 0.1, 50);
+
+    const initialPreset = this.presets[this.options.defaultView] || this.presets.front;
+    this.camera.position.set(initialPreset.pos.x, initialPreset.pos.y, initialPreset.pos.z);
+
+    try {
+      this.renderer = new THREE.WebGLRenderer({
+        canvas: this.canvas,
+        antialias: true,
+        alpha: true,
+        powerPreference: 'high-performance'
+      });
+      this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      this.renderer.setSize(w, h, false);
+      this.renderer.setClearColor(0x000000, 0);
+    } catch (e) {
+      console.error('Failed to create WebGLRenderer:', e);
+      return;
+    }
+
+    // OrbitControls for silky smooth 360 degree drag orbit and mouse wheel zoom
+    if (typeof THREE.OrbitControls !== 'undefined' && this.options.canOrbit) {
+      this.controls = new THREE.OrbitControls(this.camera, this.renderer.domElement);
+      this.controls.enableDamping = this.options.enableDamping;
+      this.controls.dampingFactor = 0.08;
+      this.controls.enableZoom = this.options.canZoom;
+      this.controls.minDistance = 1.0;
+      this.controls.maxDistance = 5.5;
+      this.controls.target.set(initialPreset.target.x, initialPreset.target.y, initialPreset.target.z);
+
+      this.controls.addEventListener('start', () => {
+        this.isTransitioningCam = false;
+        if (this.options.onPresetChanged) this.options.onPresetChanged(null);
+      });
+    }
+
+    // Studio Lighting Rig for rich cybernetic depth
+    const amb = new THREE.AmbientLight(0xffffff, 0.95);
+    this.scene.add(amb);
+
+    const keyLight = new THREE.DirectionalLight(0x00f0ff, 1.35);
+    keyLight.position.set(2.5, 3.5, 2.5);
+    this.scene.add(keyLight);
+
+    const fillLight = new THREE.DirectionalLight(0xf72585, 0.85);
+    fillLight.position.set(-2.5, -1.5, 2.0);
+    this.scene.add(fillLight);
+
+    const topRim = new THREE.DirectionalLight(0xffffff, 0.65);
+    topRim.position.set(0, 4.0, -2.5);
+    this.scene.add(topRim);
+
+    // Hand Hierarchy Group
+    this.handGroup = new THREE.Group();
+    this.scene.add(this.handGroup);
+
+    this.buildHandMeshes();
+    this.startLoop();
+  }
+
+  buildHandMeshes() {
+    this.jointMeshes = [];
+    this.boneMeshes = [];
+
+    const F_COLORS = {
+      wrist: 0xffffff,
+      thumb: 0xff9f1c,
+      index: 0x00f0ff,
+      middle: 0x20bf6b,
+      ring: 0x9b5de5,
+      pinky: 0xf72585
+    };
+
+    const getLmColor = (i) => {
+      if (i === 0) return F_COLORS.wrist;
+      if (i >= 1 && i <= 4) return F_COLORS.thumb;
+      if (i >= 5 && i <= 8) return F_COLORS.index;
+      if (i >= 9 && i <= 12) return F_COLORS.middle;
+      if (i >= 13 && i <= 16) return F_COLORS.ring;
+      return F_COLORS.pinky;
+    };
+
+    // 21 Volumetric Joint Spheres
+    const sphereGeo = new THREE.SphereGeometry(1, 16, 16);
+    for (let i = 0; i < 21; i++) {
+      const color = getLmColor(i);
+      const isTip = [4, 8, 12, 16, 20].includes(i);
+      const isWrist = i === 0;
+      const radius = isWrist ? 0.068 : (isTip ? 0.056 : 0.046);
+
+      const mat = new THREE.MeshStandardMaterial({
+        color: color,
+        roughness: 0.25,
+        metalness: 0.60,
+        emissive: color,
+        emissiveIntensity: 0.35
+      });
+      const mesh = new THREE.Mesh(sphereGeo, mat);
+      mesh.scale.set(radius, radius, radius);
+      this.handGroup.add(mesh);
+      this.jointMeshes.push(mesh);
+    }
+
+    // Volumetric Bone Cylinders
+    this.connections = [
+      { p1: 0, p2: 1, color: F_COLORS.thumb, r: 0.035 },
+      { p1: 1, p2: 2, color: F_COLORS.thumb, r: 0.032 },
+      { p1: 2, p2: 3, color: F_COLORS.thumb, r: 0.030 },
+      { p1: 3, p2: 4, color: F_COLORS.thumb, r: 0.028 },
+
+      { p1: 0, p2: 5, color: F_COLORS.wrist, r: 0.032 },
+      { p1: 5, p2: 6, color: F_COLORS.index, r: 0.032 },
+      { p1: 6, p2: 7, color: F_COLORS.index, r: 0.029 },
+      { p1: 7, p2: 8, color: F_COLORS.index, r: 0.026 },
+
+      { p1: 0, p2: 9, color: F_COLORS.wrist, r: 0.032 },
+      { p1: 9, p2: 10, color: F_COLORS.middle, r: 0.032 },
+      { p1: 10, p2: 11, color: F_COLORS.middle, r: 0.029 },
+      { p1: 11, p2: 12, color: F_COLORS.middle, r: 0.026 },
+
+      { p1: 0, p2: 13, color: F_COLORS.wrist, r: 0.032 },
+      { p1: 13, p2: 14, color: F_COLORS.ring, r: 0.030 },
+      { p1: 14, p2: 15, color: F_COLORS.ring, r: 0.028 },
+      { p1: 15, p2: 16, color: F_COLORS.ring, r: 0.025 },
+
+      { p1: 0, p2: 17, color: F_COLORS.wrist, r: 0.030 },
+      { p1: 17, p2: 18, color: F_COLORS.pinky, r: 0.028 },
+      { p1: 18, p2: 19, color: F_COLORS.pinky, r: 0.026 },
+      { p1: 19, p2: 20, color: F_COLORS.pinky, r: 0.024 },
+
+      { p1: 5, p2: 9, color: 0x94a3b8, r: 0.024 },
+      { p1: 9, p2: 13, color: 0x94a3b8, r: 0.024 },
+      { p1: 13, p2: 17, color: 0x94a3b8, r: 0.024 }
+    ];
+
+    const cylGeo = new THREE.CylinderGeometry(1, 1, 1, 12);
+    for (const conn of this.connections) {
+      const mat = new THREE.MeshStandardMaterial({
+        color: conn.color,
+        roughness: 0.35,
+        metalness: 0.45
+      });
+      const mesh = new THREE.Mesh(cylGeo, mat);
+      this.handGroup.add(mesh);
+      this.boneMeshes.push({ mesh, conn });
+    }
+
+    // Translucent Cybernetic Palm Plate
+    if (this.options.showPalm) {
+      const palmGeo = new THREE.BufferGeometry();
+      const positions = new Float32Array(4 * 3 * 3);
+      palmGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      const palmMat = new THREE.MeshStandardMaterial({
+        color: 0x00f0ff,
+        transparent: true,
+        opacity: 0.22,
+        roughness: 0.25,
+        metalness: 0.15,
+        side: THREE.DoubleSide
+      });
+      this.palmMesh = new THREE.Mesh(palmGeo, palmMat);
+      this.handGroup.add(this.palmMesh);
+    }
+  }
+
+  to3DCoords(lms) {
+    if (!lms || lms.length < 21) return [];
+
+    const wrist = lms[0];
+    const middleMcp = lms[9] || [0.5, 0.5, 0];
+
+    const cx = (wrist[0] + middleMcp[0]) / 2;
+    const cy = (wrist[1] + middleMcp[1]) / 2;
+    const cz = ((wrist[2] || 0) + (middleMcp[2] || 0)) / 2;
+
+    const dx = middleMcp[0] - wrist[0];
+    const dy = middleMcp[1] - wrist[1];
+    const dz = (middleMcp[2] || 0) - (wrist[2] || 0);
+    const palmLen = Math.sqrt(dx*dx + dy*dy + dz*dz) || 0.35;
+    const scale = (0.75 / palmLen) * (this.options.scale || 1.0);
+
+    return lms.map(pt => {
+      const x = (pt[0] - cx) * scale;
+      const y = -(pt[1] - cy) * scale + 0.1;
+      const z = -((pt[2] !== undefined ? pt[2] : 0) - cz) * scale * 1.35;
+      return new THREE.Vector3(x, y, z);
+    });
+  }
+
+  updateMeshes(pts3D) {
+    if (!pts3D || pts3D.length < 21) return;
+
+    for (let i = 0; i < 21; i++) {
+      if (this.jointMeshes[i]) {
+        this.jointMeshes[i].position.copy(pts3D[i]);
+      }
+    }
+
+    const up = new THREE.Vector3(0, 1, 0);
+    for (let b = 0; b < this.boneMeshes.length; b++) {
+      const { mesh, conn } = this.boneMeshes[b];
+      const p1 = pts3D[conn.p1];
+      const p2 = pts3D[conn.p2];
+      if (!p1 || !p2) continue;
+
+      mesh.position.copy(p1).add(p2).multiplyScalar(0.5);
+      const dist = p1.distanceTo(p2);
+      mesh.scale.set(conn.r, Math.max(0.01, dist), conn.r);
+
+      const dir = new THREE.Vector3().subVectors(p2, p1).normalize();
+      if (dir.lengthSq() > 0.0001) {
+        mesh.quaternion.setFromUnitVectors(up, dir);
+      }
+    }
+
+    if (this.palmMesh) {
+      const posAttr = this.palmMesh.geometry.attributes.position;
+      const tris = [
+        [0, 1, 5],
+        [0, 5, 9],
+        [0, 9, 13],
+        [0, 13, 17]
+      ];
+      let offset = 0;
+      for (const [i1, i2, i3] of tris) {
+        const v1 = pts3D[i1];
+        const v2 = pts3D[i2];
+        const v3 = pts3D[i3];
+        posAttr.setXYZ(offset++, v1.x, v1.y, v1.z);
+        posAttr.setXYZ(offset++, v2.x, v2.y, v2.z);
+        posAttr.setXYZ(offset++, v3.x, v3.y, v3.z);
+      }
+      posAttr.needsUpdate = true;
+      this.palmMesh.geometry.computeVertexNormals();
+    }
+  }
+
+  setSign(signNameOrLms) {
+    if (typeof signNameOrLms === 'string') {
+      this.activeSign = signNameOrLms.toUpperCase();
+      if (typeof getCanonicalLandmarks === 'function') {
+        this.targetLms = getCanonicalLandmarks(this.activeSign);
+      }
+    } else if (Array.isArray(signNameOrLms)) {
+      this.targetLms = signNameOrLms;
+    }
+    if (!this.isAnimating && this.targetLms) {
+      const pts3D = this.to3DCoords(this.targetLms);
+      this.updateMeshes(pts3D);
+    }
+    this.render();
+  }
+
+  setViewPreset(presetName) {
+    const preset = this.presets[presetName];
+    if (!preset) return;
+    this.targetCamPos = new THREE.Vector3(preset.pos.x, preset.pos.y, preset.pos.z);
+    this.targetCamTarget = new THREE.Vector3(preset.target.x, preset.target.y, preset.target.z);
+    this.isTransitioningCam = true;
+  }
+
+  toggleAnimation() {
+    this.isAnimating = !this.isAnimating;
+    if (this.isAnimating) {
+      this.animStartTime = performance.now();
+    } else {
+      if (this.targetLms) {
+        const pts3D = this.to3DCoords(this.targetLms);
+        this.updateMeshes(pts3D);
+      }
+      this.render();
+    }
+    return this.isAnimating;
+  }
+
+  startLoop() {
+    const animate = (now) => {
+      this.reqId = requestAnimationFrame(animate);
+
+      if (this.isTransitioningCam && this.targetCamPos) {
+        this.camera.position.lerp(this.targetCamPos, 0.12);
+        if (this.controls) {
+          this.controls.target.lerp(this.targetCamTarget, 0.12);
+        }
+        if (this.camera.position.distanceTo(this.targetCamPos) < 0.02) {
+          this.camera.position.copy(this.targetCamPos);
+          if (this.controls) this.controls.target.copy(this.targetCamTarget);
+          this.isTransitioningCam = false;
+        }
+      }
+
+      if (this.controls) {
+        this.controls.update();
+      }
+
+      if (this.isAnimating && this.targetLms && this.neutralLms) {
+        const elapsed = (now - this.animStartTime) % 2000;
+        const phase = elapsed / 2000;
+        const u = 0.5 - 0.5 * Math.cos(phase * Math.PI * 2);
+        if (typeof interpolate3DLandmarks === 'function') {
+          const lmsInterp = interpolate3DLandmarks(this.neutralLms, this.targetLms, u);
+          const pts3D = this.to3DCoords(lmsInterp);
+          this.updateMeshes(pts3D);
+        }
+      }
+
+      this.render();
+    };
+
+    this.reqId = requestAnimationFrame(animate);
+  }
+
+  render() {
+    if (this.renderer && this.scene && this.camera) {
+      this.renderer.render(this.scene, this.camera);
+    }
+  }
+
+  dispose() {
+    if (this.reqId) cancelAnimationFrame(this.reqId);
+    if (this.controls) this.controls.dispose();
+    if (this.renderer) this.renderer.dispose();
+  }
+}
+
 // ================= 3D INTERACTIVE SKELETON RENDERER =================
 // Renders canonical landmarks with true 3D perspective rotation, depth foreshortening, and unique 5-finger color coding
 function renderReferenceSkeleton(canvas, signNameOrLms, options = {}) {
@@ -1154,6 +1528,11 @@ class UnmuteApp {
     // Header Quick 3D Guide Button
     this.btnHeader3DGuide = document.getElementById("btn-header-3d-guide");
 
+    // 3D Three.js WebGL Visualizer Instances
+    this.modalVisualizer3D = null;
+    this.practiceVisualizer3D = null;
+    this.cameraRefVisualizer3D = null;
+
     // Modal 3D Perspective & Animated Guide State
     this.modalYaw = 0.0;
     this.modalPitch = 0.0;
@@ -1184,6 +1563,43 @@ class UnmuteApp {
     this.btnCameraOpenModal = document.getElementById("btn-camera-open-modal");
     this.cameraRefSignTitle = document.getElementById("camera-ref-sign-title");
     this.cameraRefSignDesc = document.getElementById("camera-ref-sign-desc");
+
+    // Initialize WebGL Visualizers immediately if canvas and THREE are ready
+    if (this.modalSignCanvas && typeof THREE !== "undefined") {
+      this.modalVisualizer3D = new ThreeHandVisualizer(this.modalSignCanvas, {
+        width: 280,
+        height: 280,
+        defaultView: "front",
+        onPresetChanged: (view) => {
+          if (this.modalViewPresetBtns) {
+            this.modalViewPresetBtns.forEach(b => b.classList.toggle("active", b.dataset.view === view));
+          }
+        }
+      });
+    }
+
+    if (this.practiceTargetCanvas && typeof THREE !== "undefined") {
+      this.practiceVisualizer3D = new ThreeHandVisualizer(this.practiceTargetCanvas, {
+        width: 150,
+        height: 150,
+        defaultView: "isometric",
+        scale: 0.95,
+        onPresetChanged: (view) => {
+          if (this.practiceViewPresetBtns) {
+            this.practiceViewPresetBtns.forEach(b => b.classList.toggle("active", b.dataset.pview === view));
+          }
+        }
+      });
+    }
+
+    if (this.cameraRefCanvas && typeof THREE !== "undefined") {
+      this.cameraRefVisualizer3D = new ThreeHandVisualizer(this.cameraRefCanvas, {
+        width: 130,
+        height: 130,
+        defaultView: "front",
+        scale: 0.92
+      });
+    }
     this.cameraRefYaw = 0.45;
     this.cameraRefPitch = 0.25;
     this.isCameraRefDragging = false;
@@ -2059,9 +2475,33 @@ class UnmuteApp {
 
   // ================= PRACTICE IN-CARD 3D INTERACTIVE CONTROLS =================
   renderPractice3D(overrideLms = null) {
-    if (!this.practiceTargetCanvas) return;
     const sign = this.currentPracticeItem || "A";
 
+    if (!this.practiceVisualizer3D && this.practiceTargetCanvas && typeof THREE !== "undefined") {
+      this.practiceVisualizer3D = new ThreeHandVisualizer(this.practiceTargetCanvas, {
+        width: 150,
+        height: 150,
+        defaultView: "isometric",
+        scale: 0.95,
+        onPresetChanged: (view) => {
+          if (this.practiceViewPresetBtns) {
+            this.practiceViewPresetBtns.forEach(b => b.classList.toggle("active", b.dataset.pview === view));
+          }
+        }
+      });
+    }
+
+    if (this.practiceVisualizer3D) {
+      if (overrideLms) {
+        this.practiceVisualizer3D.setSign(overrideLms);
+      } else {
+        this.practiceVisualizer3D.setSign(sign);
+      }
+      return;
+    }
+
+    // 2D Canvas Fallback
+    if (!this.practiceTargetCanvas) return;
     renderReferenceSkeleton(this.practiceTargetCanvas, overrideLms || sign, {
       signName: sign,
       scale: 0.88,
@@ -2082,72 +2522,37 @@ class UnmuteApp {
           this.practiceViewPresetBtns.forEach(b => b.classList.remove("active"));
           btn.classList.add("active");
           const view = btn.dataset.pview;
-          if (view === "isometric") {
-            this.practiceYaw = 0.50;
-            this.practicePitch = 0.28;
-          } else if (view === "front") {
-            this.practiceYaw = 0.0;
-            this.practicePitch = 0.0;
-          } else if (view === "side") {
-            this.practiceYaw = 1.35;
-            this.practicePitch = 0.10;
+          if (this.practiceVisualizer3D) {
+            this.practiceVisualizer3D.setViewPreset(view);
+          } else {
+            if (view === "isometric") {
+              this.practiceYaw = 0.50;
+              this.practicePitch = 0.28;
+            } else if (view === "front") {
+              this.practiceYaw = 0.0;
+              this.practicePitch = 0.0;
+            } else if (view === "side") {
+              this.practiceYaw = 1.35;
+              this.practicePitch = 0.10;
+            }
+            this.renderPractice3D();
           }
-          this.renderPractice3D();
         });
       });
     }
 
     // In-card animation toggle
     if (this.btnPracticeAnimToggle) {
-      this.btnPracticeAnimToggle.addEventListener("click", () => this.togglePracticeAnimation());
-    }
-
-    // Drag to orbit 3D model directly on practice card
-    const targetEl = this.practiceCanvasWrapper || this.practiceTargetCanvas;
-    if (targetEl) {
-      let isDragging = false;
-      let startX = 0, startY = 0;
-
-      const onStart = (cx, cy) => {
-        isDragging = true;
-        startX = cx;
-        startY = cy;
-      };
-
-      const onMove = (cx, cy) => {
-        if (!isDragging) return;
-        const dx = cx - startX;
-        const dy = cy - startY;
-        startX = cx;
-        startY = cy;
-
-        this.practiceYaw += dx * 0.012;
-        this.practicePitch = Math.max(-1.45, Math.min(1.45, this.practicePitch + dy * 0.012));
-
-        if (this.practiceViewPresetBtns) {
-          this.practiceViewPresetBtns.forEach(b => b.classList.remove("active"));
+      this.btnPracticeAnimToggle.addEventListener("click", () => {
+        if (this.practiceVisualizer3D) {
+          const isAnim = this.practiceVisualizer3D.toggleAnimation();
+          this.btnPracticeAnimToggle.classList.toggle("active", isAnim);
+          const icon = this.btnPracticeAnimToggle.querySelector("i");
+          if (icon) icon.className = isAnim ? "fas fa-pause" : "fas fa-play";
+        } else {
+          this.togglePracticeAnimation();
         }
-        this.renderPractice3D();
-      };
-
-      const onEnd = () => { isDragging = false; };
-
-      targetEl.addEventListener("mousedown", e => {
-        e.preventDefault();
-        onStart(e.clientX, e.clientY);
       });
-      window.addEventListener("mousemove", e => {
-        if (isDragging) onMove(e.clientX, e.clientY);
-      });
-      window.addEventListener("mouseup", onEnd);
-
-      targetEl.addEventListener("touchstart", e => {
-        if (e.touches && e.touches.length === 1) onStart(e.touches[0].clientX, e.touches[0].clientY);
-      }, { passive: true });
-      window.addEventListener("touchmove", e => {
-        if (isDragging && e.touches && e.touches.length === 1) onMove(e.touches[0].clientX, e.touches[0].clientY);
-      }, { passive: true });
-      window.addEventListener("touchend", onEnd);
     }
   }
 
@@ -2157,46 +2562,33 @@ class UnmuteApp {
 
     if (this.practiceAnimActive) {
       this.btnPracticeAnimToggle.classList.add("active");
-      this.btnPracticeAnimToggle.textContent = "⏸ Pause";
-      this.practiceAnimStartTime = performance.now();
+      const icon = this.btnPracticeAnimToggle.querySelector("i");
+      if (icon) icon.className = "fas fa-pause";
       this.startPracticeAnimLoop();
     } else {
       this.btnPracticeAnimToggle.classList.remove("active");
-      this.btnPracticeAnimToggle.textContent = "▶ Animate";
+      const icon = this.btnPracticeAnimToggle.querySelector("i");
+      if (icon) icon.className = "fas fa-play";
       if (this.practiceAnimReqId) cancelAnimationFrame(this.practiceAnimReqId);
       this.renderPractice3D();
     }
   }
 
   startPracticeAnimLoop() {
+    this.practiceAnimStartTime = performance.now();
     const targetSign = this.currentPracticeItem || "A";
     const targetLms = getCanonicalLandmarks(targetSign);
     const neutralLms = getNeutralHandLandmarks();
+    const cycleDuration = 1800;
 
-    const animStep = (timestamp) => {
-      if (!this.practiceAnimActive || this.activeTab !== "practice-tab") {
-        this.practiceAnimActive = false;
-        if (this.btnPracticeAnimToggle) {
-          this.btnPracticeAnimToggle.classList.remove("active");
-          this.btnPracticeAnimToggle.textContent = "▶ Animate";
-        }
-        return;
-      }
+    const animStep = (now) => {
+      if (!this.practiceAnimActive) return;
+      const elapsed = (now - this.practiceAnimStartTime) % cycleDuration;
+      const t = elapsed / cycleDuration;
+      const easeT = 0.5 - 0.5 * Math.cos(t * Math.PI * 2);
+      const currentLms = interpolate3DLandmarks(neutralLms, targetLms, easeT);
 
-      const elapsed = timestamp - this.practiceAnimStartTime;
-      const cycleTime = 2600;
-      const cyclePos = elapsed % cycleTime;
-      const transTime = 1800;
-
-      let progress = 1.0;
-      if (cyclePos < transTime) {
-        const rawT = cyclePos / transTime;
-        progress = rawT < 0.5 ? 4 * rawT * rawT * rawT : 1 - Math.pow(-2 * rawT + 2, 3) / 2;
-      }
-
-      const currentLms = interpolate3DLandmarks(neutralLms, targetLms, progress);
       this.renderPractice3D(currentLms);
-
       this.practiceAnimReqId = requestAnimationFrame(animStep);
     };
 
@@ -2205,18 +2597,30 @@ class UnmuteApp {
 
   // ================= LIVE CAMERA TAB 3D REFERENCE WIDGET =================
   renderCameraRef3D() {
-    if (!this.cameraRefCanvas) return;
     const sign = this.activeCameraRefSign || "A";
 
-    renderReferenceSkeleton(this.cameraRefCanvas, sign, {
-      scale: 0.86,
-      lineWidth: 3.2,
-      tipRadius: 5.5,
-      jointRadius: 3.5,
-      glowBlur: 10,
-      yaw: this.cameraRefYaw,
-      pitch: this.cameraRefPitch
-    });
+    if (!this.cameraRefVisualizer3D && this.cameraRefCanvas && typeof THREE !== "undefined") {
+      this.cameraRefVisualizer3D = new ThreeHandVisualizer(this.cameraRefCanvas, {
+        width: 130,
+        height: 130,
+        defaultView: "front",
+        scale: 0.92
+      });
+    }
+
+    if (this.cameraRefVisualizer3D) {
+      this.cameraRefVisualizer3D.setSign(sign);
+    } else if (this.cameraRefCanvas) {
+      renderReferenceSkeleton(this.cameraRefCanvas, sign, {
+        scale: 0.86,
+        lineWidth: 3.2,
+        tipRadius: 5.5,
+        jointRadius: 3.5,
+        glowBlur: 10,
+        yaw: this.cameraRefYaw,
+        pitch: this.cameraRefPitch
+      });
+    }
 
     if (this.cameraRefSignTitle) {
       this.cameraRefSignTitle.textContent = sign.length === 1 ? `Letter '${sign}'` : `Sign: ${sign}`;
@@ -2244,54 +2648,9 @@ class UnmuteApp {
       });
     }
 
-    const wrap = this.cameraRefCanvasWrap || this.cameraRefCanvas;
-    if (wrap) {
-      let isDragging = false;
-      let startX = 0, startY = 0;
-
-      wrap.addEventListener("mousedown", (e) => {
-        e.preventDefault();
-        isDragging = true;
-        startX = e.clientX;
-        startY = e.clientY;
-      });
-      window.addEventListener("mousemove", (e) => {
-        if (!isDragging) return;
-        const dx = e.clientX - startX;
-        const dy = e.clientY - startY;
-        startX = e.clientX;
-        startY = e.clientY;
-        this.cameraRefYaw += dx * 0.012;
-        this.cameraRefPitch = Math.max(-1.45, Math.min(1.45, this.cameraRefPitch + dy * 0.012));
-        this.renderCameraRef3D();
-      });
-      window.addEventListener("mouseup", () => { isDragging = false; });
-
-      wrap.addEventListener("touchstart", (e) => {
-        if (e.touches && e.touches.length === 1) {
-          isDragging = true;
-          startX = e.touches[0].clientX;
-          startY = e.touches[0].clientY;
-        }
-      }, { passive: true });
-      window.addEventListener("touchmove", (e) => {
-        if (isDragging && e.touches && e.touches.length === 1) {
-          const dx = e.touches[0].clientX - startX;
-          const dy = e.touches[0].clientY - startY;
-          startX = e.touches[0].clientX;
-          startY = e.touches[0].clientY;
-          this.cameraRefYaw += dx * 0.012;
-          this.cameraRefPitch = Math.max(-1.45, Math.min(1.45, this.cameraRefPitch + dy * 0.012));
-          this.renderCameraRef3D();
-        }
-      }, { passive: true });
-      window.addEventListener("touchend", () => { isDragging = false; });
-    }
-
     // Initial render of camera reference widget
     this.renderCameraRef3D();
   }
-
 
   // ================= 3D INTERACTIVE CONTROLS & ANIMATION =================
   initModal3DControls() {
@@ -2302,78 +2661,45 @@ class UnmuteApp {
           this.modalViewPresetBtns.forEach(b => b.classList.remove("active"));
           btn.classList.add("active");
           const view = btn.dataset.view;
-          if (view === "front") {
-            this.modalYaw = 0.0;
-            this.modalPitch = 0.0;
-          } else if (view === "side") {
-            this.modalYaw = 1.35;
-            this.modalPitch = 0.10;
-          } else if (view === "top") {
-            this.modalYaw = 0.0;
-            this.modalPitch = 1.45;
-          } else if (view === "isometric") {
-            this.modalYaw = 0.65;
-            this.modalPitch = 0.40;
+
+          if (this.modalVisualizer3D) {
+            this.modalVisualizer3D.setViewPreset(view);
+          } else {
+            if (view === "front") {
+              this.modalYaw = 0.0;
+              this.modalPitch = 0.0;
+            } else if (view === "side") {
+              this.modalYaw = 1.35;
+              this.modalPitch = 0.12;
+            } else if (view === "top") {
+              this.modalYaw = 0.0;
+              this.modalPitch = 1.45;
+            } else if (view === "isometric") {
+              this.modalYaw = 0.65;
+              this.modalPitch = 0.40;
+            }
+            this.redrawModal3D();
           }
-          this.redrawModal3D();
         });
       });
     }
 
     // Animation Formation Toggle
     if (this.btnModalAnimToggle) {
-      this.btnModalAnimToggle.addEventListener("click", () => this.toggleModalAnimation());
-    }
-
-    // Mouse & Touch 360° Drag Orbit Handlers
-    const targetEl = this.modalCanvasWrapper || this.modalSignCanvas;
-    if (targetEl) {
-      const onStart = (clientX, clientY) => {
-        this.isModalDragging = true;
-        this.modalDragLastX = clientX;
-        this.modalDragLastY = clientY;
-      };
-
-      const onMove = (clientX, clientY) => {
-        if (!this.isModalDragging) return;
-        const dx = clientX - this.modalDragLastX;
-        const dy = clientY - this.modalDragLastY;
-        this.modalDragLastX = clientX;
-        this.modalDragLastY = clientY;
-
-        this.modalYaw += dx * 0.012;
-        this.modalPitch = Math.max(-1.45, Math.min(1.45, this.modalPitch + dy * 0.012));
-
-        if (this.modalViewPresetBtns) {
-          this.modalViewPresetBtns.forEach(b => b.classList.remove("active"));
+      this.btnModalAnimToggle.addEventListener("click", () => {
+        if (this.modalVisualizer3D) {
+          const isAnim = this.modalVisualizer3D.toggleAnimation();
+          this.btnModalAnimToggle.classList.toggle("active", isAnim);
+          const icon = this.btnModalAnimToggle.querySelector("i");
+          if (icon) icon.className = isAnim ? "fas fa-pause" : "fas fa-play";
+          const label = this.btnModalAnimToggle.querySelector("span") || this.btnModalAnimToggle;
+          if (label && label.childNodes.length > 1) {
+            label.childNodes[1].textContent = isAnim ? " Pause Guide" : " Play Guide";
+          }
+        } else {
+          this.toggleModalAnimation();
         }
-        this.redrawModal3D();
-      };
-
-      const onEnd = () => {
-        this.isModalDragging = false;
-      };
-
-      targetEl.addEventListener("mousedown", e => {
-        e.preventDefault();
-        onStart(e.clientX, e.clientY);
       });
-      window.addEventListener("mousemove", e => {
-        if (this.isModalDragging) onMove(e.clientX, e.clientY);
-      });
-      window.addEventListener("mouseup", onEnd);
-
-      targetEl.addEventListener("touchstart", e => {
-        if (e.touches && e.touches.length === 1) {
-          onStart(e.touches[0].clientX, e.touches[0].clientY);
-        }
-      }, { passive: true });
-      window.addEventListener("touchmove", e => {
-        if (this.isModalDragging && e.touches && e.touches.length === 1) {
-          onMove(e.touches[0].clientX, e.touches[0].clientY);
-        }
-      }, { passive: true });
-      window.addEventListener("touchend", onEnd);
     }
   }
 
@@ -2396,49 +2722,31 @@ class UnmuteApp {
 
     if (this.modalAnimActive) {
       this.btnModalAnimToggle.classList.add("active");
-      this.btnModalAnimToggle.textContent = "⏸ Pause";
-      this.modalAnimStartTime = performance.now();
+      this.btnModalAnimToggle.textContent = "⏸ Pause Guide";
       this.startModalAnimLoop();
     } else {
       this.btnModalAnimToggle.classList.remove("active");
-      this.btnModalAnimToggle.textContent = "▶ Animate";
+      this.btnModalAnimToggle.textContent = "▶ Play Guide";
       if (this.modalAnimReqId) cancelAnimationFrame(this.modalAnimReqId);
       this.redrawModal3D();
     }
   }
 
   startModalAnimLoop() {
-    if (!this.activeInspectedSign) return;
+    this.modalAnimStartTime = performance.now();
     const targetLms = getCanonicalLandmarks(this.activeInspectedSign);
     const neutralLms = getNeutralHandLandmarks();
+    const cycleDuration = 1800;
 
-    const animStep = (timestamp) => {
-      if (!this.modalAnimActive || !this.inspectorModal || this.inspectorModal.style.display === "none") {
-        this.modalAnimActive = false;
-        if (this.btnModalAnimToggle) {
-          this.btnModalAnimToggle.classList.remove("active");
-          this.btnModalAnimToggle.textContent = "▶ Animate";
-        }
-        return;
-      }
-
-      const elapsed = timestamp - this.modalAnimStartTime;
-      const cycleTime = 2600; // 2.6s total loop
-      const cyclePos = elapsed % cycleTime;
-      const transTime = 1800; // 1.8s forming from neutral, 0.8s hold at target
-
-      let progress = 1.0;
-      if (cyclePos < transTime) {
-        const rawT = cyclePos / transTime;
-        // Smooth cubic ease-in-out
-        progress = rawT < 0.5 ? 4 * rawT * rawT * rawT : 1 - Math.pow(-2 * rawT + 2, 3) / 2;
-      }
-
-      const currentLms = interpolate3DLandmarks(neutralLms, targetLms, progress);
+    const animStep = (now) => {
+      if (!this.modalAnimActive) return;
+      const elapsed = (now - this.modalAnimStartTime) % cycleDuration;
+      const t = elapsed / cycleDuration;
+      const easeT = 0.5 - 0.5 * Math.cos(t * Math.PI * 2);
+      const currentLms = interpolate3DLandmarks(neutralLms, targetLms, easeT);
 
       if (this.modalSignCanvas) {
         renderReferenceSkeleton(this.modalSignCanvas, currentLms, {
-          signName: this.activeInspectedSign,
           scale: 0.90,
           lineWidth: 4,
           tipRadius: 7,
@@ -2493,22 +2801,10 @@ class UnmuteApp {
     if (this.modalSignTips) this.modalSignTips.textContent = `💡 ${tips}`;
 
     // Reset 3D view angles to front
-    this.modalYaw = 0.0;
-    this.modalPitch = 0.0;
     if (this.modalViewPresetBtns) {
       this.modalViewPresetBtns.forEach(b => {
         b.classList.toggle("active", b.dataset.view === "front");
       });
-    }
-
-    // Stop ongoing animation if active
-    if (this.modalAnimActive) {
-      this.modalAnimActive = false;
-      if (this.modalAnimReqId) cancelAnimationFrame(this.modalAnimReqId);
-    }
-    if (this.btnModalAnimToggle) {
-      this.btnModalAnimToggle.classList.remove("active");
-      this.btnModalAnimToggle.textContent = "▶ Animate";
     }
 
     // Render Color-Coded 5-Finger Keypoint Badges
@@ -2541,12 +2837,35 @@ class UnmuteApp {
     }
 
     this.inspectorModal.style.display = "flex";
-    this.redrawModal3D();
+
+    // Initialize WebGL Visualizer if not yet created
+    if (!this.modalVisualizer3D && this.modalSignCanvas && typeof THREE !== "undefined") {
+      this.modalVisualizer3D = new ThreeHandVisualizer(this.modalSignCanvas, {
+        width: 280,
+        height: 280,
+        defaultView: "front",
+        onPresetChanged: (view) => {
+          if (this.modalViewPresetBtns) {
+            this.modalViewPresetBtns.forEach(b => b.classList.toggle("active", b.dataset.view === view));
+          }
+        }
+      });
+    }
+
+    if (this.modalVisualizer3D) {
+      this.modalVisualizer3D.setSign(sign);
+      this.modalVisualizer3D.setViewPreset("front");
+    } else {
+      this.redrawModal3D();
+    }
   }
 
   closeInspectorModal() {
     if (this.inspectorModal) {
       this.inspectorModal.style.display = "none";
+    }
+    if (this.modalVisualizer3D && this.modalVisualizer3D.isAnimating) {
+      this.modalVisualizer3D.toggleAnimation();
     }
     if (this.modalAnimActive) {
       this.modalAnimActive = false;
@@ -2554,7 +2873,8 @@ class UnmuteApp {
     }
     if (this.btnModalAnimToggle) {
       this.btnModalAnimToggle.classList.remove("active");
-      this.btnModalAnimToggle.textContent = "▶ Animate";
+      const icon = this.btnModalAnimToggle.querySelector("i");
+      if (icon) icon.className = "fas fa-play";
     }
   }
 

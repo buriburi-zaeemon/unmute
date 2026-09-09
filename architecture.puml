@@ -11,13 +11,15 @@ package "Frontend Web Application (Browser Client)" {
   component "Sign Language Mode Switcher (ASL/ISL)" as LangSelector <<Component>>
   component "Video Upload & Subtitle Player" as UploadMod <<Component>>
   component "Interactive Practice Studio" as PracticeMod <<Component>>
-  component "3D Hand Visualizer, Animated Guide & Color Engine (app.js)" as VisualizerEng <<Engine>>
+  component "WebGL 3D Hand Visualizer (Three.js + OrbitControls)" as VisualizerEng <<Engine>>
   note bottom of VisualizerEng
-    Visualizer & Guide:
-    - 360° 3D Orbit Drag & Perspective Presets
-    - Cubic Eased Animated Finger Formation
+    WebGL 3D Engine:
+    - Volumetric Hand Mesh (Joint Spheres & Bone Cylinders)
+    - Translucent Cybernetic Palm Plate
+    - Three.js OrbitControls (360° Drag, Zoom & Pan)
+    - Smooth Camera Preset Glides (Front, Side, Top, Orbit)
+    - Eased Hand Formation Animation Guide
     - High-Contrast 5-Finger Color System
-    - Instant Fallback Anatomical Catalog
   end note
   component "Custom Gesture Studio" as CustomMod <<Component>>
   component "Bilingual Visual Dictionary (ASL/ISL)" as DictMod <<Component>>
