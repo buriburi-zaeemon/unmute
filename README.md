@@ -97,35 +97,27 @@ pip install -r requirements.txt
 
 ### 3. Start the Server & Web Application
 
-You can start the application using any of the scripts in the root directory:
-
 **Option A — Python Launcher (Recommended)**:
 ```bash
 python run.py
 ```
-*(Options: `--port 8090`, `--reload`, `--no-browser`)*
+*(Automatically starts on dedicated port `8505` to prevent clashes with 8080/8000/3000. Options: `--reload`, `--no-browser`)*
 
-**Option B — Double-Click Batch Script**:
+**Option B — Convenience Scripts**:
 - Double-click `start.bat` (or run `.\start.ps1` in PowerShell).
 
 **Option C — Direct Uvicorn**:
 ```bash
-uvicorn backend.main:app --host 127.0.0.1 --port 8090 --reload
+uvicorn backend.main:app --host 127.0.0.1 --port 8505 --reload
 ```
 
-Then open your browser to **`http://localhost:8090`**.
-
-### 4. Stop the Server
+Then open your browser to **`http://localhost:8505`**.
 
 To stop any running server instance and free the port:
-
-**Python**:
 ```bash
 python stop.py
+# or double-click stop.bat / run .\stop.ps1
 ```
-
-**Double-Click**:
-- Double-click `stop.bat` (or run `.\stop.ps1` in PowerShell).
 
 ---
 
