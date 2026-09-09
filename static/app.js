@@ -1,17 +1,54 @@
 /**
  * Unmute - High Performance Client Application Logic
  * Low-latency real-time video pipeline with binary WebSocket streaming,
- * in-flight flow control, canonical hand skeleton visualizers, and responsive Practice Studio.
+ * in-flight flow control, interactive 3D hand skeleton visualizer, animated sign guide,
+ * color-coded 5-finger anatomy, and responsive Practice Studio.
  */
 
 // ================= HAND SKELETON CONNECTIONS REFERENCE =================
 const HAND_CONNECTIONS = [
-  [0, 1], [1, 2], [2, 3], [3, 4],        // Thumb
-  [0, 5], [5, 6], [6, 7], [7, 8],        // Index
-  [5, 9], [9, 10], [10, 11], [11, 12],   // Middle
-  [9, 13], [13, 14], [14, 15], [15, 16], // Ring
-  [13, 17], [17, 18], [18, 19], [19, 20],// Pinky
-  [0, 17]                                // Palm base
+  [0, 1], [1, 2], [2, 3], [3, 4],        // Thumb (indices 0..3)
+  [0, 5], [5, 6], [6, 7], [7, 8],        // Index (indices 4..7)
+  [5, 9], [9, 10], [10, 11], [11, 12],   // Middle (indices 8..11)
+  [9, 13], [13, 14], [14, 15], [15, 16], // Ring (indices 12..15)
+  [13, 17], [17, 18], [18, 19], [19, 20],// Pinky (indices 16..19)
+  [0, 17]                                // Palm base (index 20)
+];
+
+// ================= 5-FINGER UNIQUE COLOR PALETTE =================
+const FINGER_COLORS = {
+  thumb: "#ff9f1c",   // Neon Amber / Gold
+  index: "#00f0ff",   // Electric Cyan
+  middle: "#20bf6b",  // Emerald Green
+  ring: "#9b5de5",    // Royal Purple
+  pinky: "#f72585",   // Hot Pink / Magenta
+  palm: "rgba(220, 235, 255, 0.65)" // Ice Silver
+};
+
+// 21-element joint color mapping
+const JOINT_COLORS = [
+  "#e2e8f0", // 0: Wrist
+  FINGER_COLORS.thumb, FINGER_COLORS.thumb, FINGER_COLORS.thumb, FINGER_COLORS.thumb,       // 1-4: Thumb
+  FINGER_COLORS.index, FINGER_COLORS.index, FINGER_COLORS.index, FINGER_COLORS.index,       // 5-8: Index
+  FINGER_COLORS.middle, FINGER_COLORS.middle, FINGER_COLORS.middle, FINGER_COLORS.middle,   // 9-12: Middle
+  FINGER_COLORS.ring, FINGER_COLORS.ring, FINGER_COLORS.ring, FINGER_COLORS.ring,           // 13-16: Ring
+  FINGER_COLORS.pinky, FINGER_COLORS.pinky, FINGER_COLORS.pinky, FINGER_COLORS.pinky       // 17-20: Pinky
+];
+
+// Bone connection colors matching the 21 bones
+const CONNECTION_COLORS = [
+  // Thumb: [0, 1], [1, 2], [2, 3], [3, 4]
+  FINGER_COLORS.thumb, FINGER_COLORS.thumb, FINGER_COLORS.thumb, FINGER_COLORS.thumb,
+  // Index: [0, 5], [5, 6], [6, 7], [7, 8]
+  FINGER_COLORS.palm, FINGER_COLORS.index, FINGER_COLORS.index, FINGER_COLORS.index,
+  // Middle: [5, 9], [9, 10], [10, 11], [11, 12]
+  FINGER_COLORS.palm, FINGER_COLORS.middle, FINGER_COLORS.middle, FINGER_COLORS.middle,
+  // Ring: [9, 13], [13, 14], [14, 15], [15, 16]
+  FINGER_COLORS.palm, FINGER_COLORS.ring, FINGER_COLORS.ring, FINGER_COLORS.ring,
+  // Pinky: [13, 17], [17, 18], [18, 19], [19, 20]
+  FINGER_COLORS.palm, FINGER_COLORS.pinky, FINGER_COLORS.pinky, FINGER_COLORS.pinky,
+  // Palm base: [0, 17]
+  FINGER_COLORS.palm
 ];
 
 // ================= TOAST HELPER =================
@@ -29,128 +66,683 @@ function showToast(message, type = "info") {
   }, 3500);
 }
 
-// ================= CANONICAL LANDMARK GENERATOR =================
+// ================= INSTANT FALLBACK SIGN GUIDE MAP =================
+// Comprehensive anatomical dictionary so Practice Studio and Inspector never show blank/generic text
+const FALLBACK_SIGN_GUIDE = {
+  "A": {
+    sign: "A", category: "Alphabet",
+    description: "Form a solid fist with all four fingers curled tightly. Rest the thumb straight upright along the outer side of the index finger.",
+    tips: "Keep the thumb vertical along the index knuckle; do not fold it across the front fingers.",
+    keypoints: [
+      { finger: "Thumb", state: "Upright along index side" },
+      { finger: "Index", state: "Curled tightly into fist" },
+      { finger: "Middle", state: "Curled tightly into fist" },
+      { finger: "Ring", state: "Curled tightly into fist" },
+      { finger: "Pinky", state: "Curled tightly into fist" }
+    ]
+  },
+  "B": {
+    sign: "B", category: "Alphabet",
+    description: "Hold all four fingers straight upright and glued together. Fold the thumb flat across the palm.",
+    tips: "Keep upright fingers pressed together with zero gap, and tuck the thumb comfortably across your palm.",
+    keypoints: [
+      { finger: "Thumb", state: "Folded flat across palm" },
+      { finger: "Index", state: "Straight upright (together)" },
+      { finger: "Middle", state: "Straight upright (together)" },
+      { finger: "Ring", state: "Straight upright (together)" },
+      { finger: "Pinky", state: "Straight upright (together)" }
+    ]
+  },
+  "C": {
+    sign: "C", category: "Alphabet",
+    description: "Curve all four fingers and thumb into an open, smooth 'C' arc like holding a cup.",
+    tips: "Oppose the curved thumb to the arched fingers to form a clearly defined circular silhouette.",
+    keypoints: [
+      { finger: "Thumb", state: "Curved forward and upward" },
+      { finger: "Index", state: "Curved downward in arc" },
+      { finger: "Middle", state: "Curved downward in arc" },
+      { finger: "Ring", state: "Curved downward in arc" },
+      { finger: "Pinky", state: "Curved downward in arc" }
+    ]
+  },
+  "D": {
+    sign: "D", category: "Alphabet",
+    description: "Extend index finger straight toward the ceiling. Curl middle, ring, and pinky down to touch the thumb tip, creating a circular loop.",
+    tips: "Form an 'O' ring with middle, ring, pinky, and thumb, leaving the index finger pointing vertically.",
+    keypoints: [
+      { finger: "Thumb", state: "Touching middle & ring tips" },
+      { finger: "Index", state: "Pointing straight upright" },
+      { finger: "Middle", state: "Curled touching thumb" },
+      { finger: "Ring", state: "Curled touching thumb" },
+      { finger: "Pinky", state: "Curled touching thumb" }
+    ]
+  },
+  "E": {
+    sign: "E", category: "Alphabet",
+    description: "Curl all four fingertips tightly downward so they rest along the top edge of the thumb tucked underneath.",
+    tips: "Keep knuckles high with fingertips curled tightly downward against the thumb.",
+    keypoints: [
+      { finger: "Thumb", state: "Bent horizontally below tips" },
+      { finger: "Index", state: "Curled down resting on thumb" },
+      { finger: "Middle", state: "Curled down resting on thumb" },
+      { finger: "Ring", state: "Curled down resting on thumb" },
+      { finger: "Pinky", state: "Curled down resting on thumb" }
+    ]
+  },
+  "F": {
+    sign: "F", category: "Alphabet",
+    description: "Touch the tips of thumb and index finger to form a round circle; extend middle, ring, and pinky straight up and fanned apart.",
+    tips: "Similar to the universal 'OK' gesture; keep the remaining three fingers open and upright.",
+    keypoints: [
+      { finger: "Thumb", state: "Pinched touching index tip" },
+      { finger: "Index", state: "Pinched touching thumb tip" },
+      { finger: "Middle", state: "Straight upright fanned" },
+      { finger: "Ring", state: "Straight upright fanned" },
+      { finger: "Pinky", state: "Straight upright fanned" }
+    ]
+  },
+  "G": {
+    sign: "G", category: "Alphabet",
+    description: "Extend index finger and thumb horizontally to the side parallel to each other like a small pinch caliper.",
+    tips: "Point index finger horizontally with thumb parallel; curl middle, ring, and pinky into the palm.",
+    keypoints: [
+      { finger: "Thumb", state: "Extended parallel sideways" },
+      { finger: "Index", state: "Extended parallel sideways" },
+      { finger: "Middle", state: "Curled into palm" },
+      { finger: "Ring", state: "Curled into palm" },
+      { finger: "Pinky", state: "Curled into palm" }
+    ]
+  },
+  "H": {
+    sign: "H", category: "Alphabet",
+    description: "Extend index and middle fingers straight horizontally side-by-side pointing sideways; thumb folded over ring.",
+    tips: "Lock index and middle fingers tightly together pointing horizontally.",
+    keypoints: [
+      { finger: "Thumb", state: "Folded over ring finger" },
+      { finger: "Index", state: "Extended horizontal sideways" },
+      { finger: "Middle", state: "Extended horizontal sideways" },
+      { finger: "Ring", state: "Curled into palm" },
+      { finger: "Pinky", state: "Curled into palm" }
+    ]
+  },
+  "I": {
+    sign: "I", category: "Alphabet",
+    description: "Extend pinky finger straight upright. Curl index, middle, and ring into a fist with thumb locked across.",
+    tips: "Only the small pinky finger stands tall; keep all other fingers firmly closed.",
+    keypoints: [
+      { finger: "Thumb", state: "Folded across knuckles" },
+      { finger: "Index", state: "Curled tightly into fist" },
+      { finger: "Middle", state: "Curled tightly into fist" },
+      { finger: "Ring", state: "Curled tightly into fist" },
+      { finger: "Pinky", state: "Pointing straight upright" }
+    ]
+  },
+  "J": {
+    sign: "J", category: "Alphabet",
+    description: "Hold the 'I' handshape (pinky up) and trace a curving 'J' swooping motion in the air with your wrist.",
+    tips: "Start upright with the pinky and carve downward and inward in a smooth tracing motion.",
+    keypoints: [
+      { finger: "Thumb", state: "Folded across knuckles" },
+      { finger: "Index", state: "Curled into fist" },
+      { finger: "Middle", state: "Curled into fist" },
+      { finger: "Ring", state: "Curled into fist" },
+      { finger: "Pinky", state: "Upright tracing 'J' arc" }
+    ]
+  },
+  "K": {
+    sign: "K", category: "Alphabet",
+    description: "Index finger points straight up, middle finger angles slightly forward, and thumb tip rests at the base of middle finger.",
+    tips: "Place thumb tip between the base knuckles of index and middle fingers; middle finger tilts slightly forward.",
+    keypoints: [
+      { finger: "Thumb", state: "Placed between index & middle" },
+      { finger: "Index", state: "Straight upright" },
+      { finger: "Middle", state: "Angled slightly forward" },
+      { finger: "Ring", state: "Curled into palm" },
+      { finger: "Pinky", state: "Curled into palm" }
+    ]
+  },
+  "L": {
+    sign: "L", category: "Alphabet",
+    description: "Extend thumb horizontally and index finger vertically to form a sharp 90-degree right angle 'L'.",
+    tips: "Lock thumb fully horizontal and index finger vertical; curl remaining three fingers tightly into the palm.",
+    keypoints: [
+      { finger: "Thumb", state: "Extended 90° horizontal" },
+      { finger: "Index", state: "Extended 90° vertical" },
+      { finger: "Middle", state: "Curled into palm" },
+      { finger: "Ring", state: "Curled into palm" },
+      { finger: "Pinky", state: "Curled into palm" }
+    ]
+  },
+  "M": {
+    sign: "M", category: "Alphabet",
+    description: "Tuck thumb underneath index, middle, and ring fingers, peeking out between ring and pinky fingers.",
+    tips: "Think of the three humps of 'M'—drape index, middle, and ring fingers over the tucked thumb.",
+    keypoints: [
+      { finger: "Thumb", state: "Tucked under 3 fingers" },
+      { finger: "Index", state: "Curled over thumb" },
+      { finger: "Middle", state: "Curled over thumb" },
+      { finger: "Ring", state: "Curled over thumb" },
+      { finger: "Pinky", state: "Curled on side" }
+    ]
+  },
+  "N": {
+    sign: "N", category: "Alphabet",
+    description: "Tuck thumb underneath index and middle fingers, peeking out between middle and ring fingers.",
+    tips: "Think of the two humps of 'N'—drape index and middle fingers over the tucked thumb.",
+    keypoints: [
+      { finger: "Thumb", state: "Tucked under 2 fingers" },
+      { finger: "Index", state: "Curled over thumb" },
+      { finger: "Middle", state: "Curled over thumb" },
+      { finger: "Ring", state: "Curled into palm" },
+      { finger: "Pinky", state: "Curled into palm" }
+    ]
+  },
+  "O": {
+    sign: "O", category: "Alphabet",
+    description: "Touch all four fingertips to the thumb tip to create a smooth circular 'O' shape.",
+    tips: "Form a circular aperture with all fingertips touching the thumb tip, resembling looking through a lens.",
+    keypoints: [
+      { finger: "Thumb", state: "Curved touching all tips" },
+      { finger: "Index", state: "Curved touching thumb tip" },
+      { finger: "Middle", state: "Curved touching thumb tip" },
+      { finger: "Ring", state: "Curved touching thumb tip" },
+      { finger: "Pinky", state: "Curved touching thumb tip" }
+    ]
+  },
+  "P": {
+    sign: "P", category: "Alphabet",
+    description: "Form the 'K' finger shape (thumb between index and middle) but tilt wrist downward so index points forward/down.",
+    tips: "Hold the 'K' handshape and tilt the hand downward from the wrist.",
+    keypoints: [
+      { finger: "Thumb", state: "Placed between index & middle" },
+      { finger: "Index", state: "Pointing forward/down" },
+      { finger: "Middle", state: "Pointing downward" },
+      { finger: "Ring", state: "Curled into palm" },
+      { finger: "Pinky", state: "Curled into palm" }
+    ]
+  },
+  "Q": {
+    sign: "Q", category: "Alphabet",
+    description: "Same caliper handshape as 'G' (index and thumb parallel) but tilted downward toward the floor.",
+    tips: "Point index finger and thumb straight down like picking up a coin.",
+    keypoints: [
+      { finger: "Thumb", state: "Pointing downward parallel" },
+      { finger: "Index", state: "Pointing downward parallel" },
+      { finger: "Middle", state: "Curled into palm" },
+      { finger: "Ring", state: "Curled into palm" },
+      { finger: "Pinky", state: "Curled into palm" }
+    ]
+  },
+  "R": {
+    sign: "R", category: "Alphabet",
+    description: "Extend index and middle fingers upright and cross middle finger tightly over the front of index finger.",
+    tips: "Cross your fingers for good luck! Middle finger crosses over index; thumb folds across ring.",
+    keypoints: [
+      { finger: "Thumb", state: "Folded across ring finger" },
+      { finger: "Index", state: "Extended upright crossed" },
+      { finger: "Middle", state: "Crossed over index finger" },
+      { finger: "Ring", state: "Curled into palm" },
+      { finger: "Pinky", state: "Curled into palm" }
+    ]
+  },
+  "S": {
+    sign: "S", category: "Alphabet",
+    description: "Clench all four fingers into a tight fist and wrap the thumb horizontally across the front knuckles.",
+    tips: "Lock the thumb horizontally across the center of the fist, distinct from 'A' where thumb is alongside.",
+    keypoints: [
+      { finger: "Thumb", state: "Wrapped across front knuckles" },
+      { finger: "Index", state: "Curled tightly into fist" },
+      { finger: "Middle", state: "Curled tightly into fist" },
+      { finger: "Ring", state: "Curled tightly into fist" },
+      { finger: "Pinky", state: "Curled tightly into fist" }
+    ]
+  },
+  "T": {
+    sign: "T", category: "Alphabet",
+    description: "Tuck thumb tip between index and middle fingers, with only the index finger curled over the thumb.",
+    tips: "Only index finger drapes over thumb tip; middle, ring, and pinky remain in a fist.",
+    keypoints: [
+      { finger: "Thumb", state: "Tucked under index finger" },
+      { finger: "Index", state: "Curled over thumb tip" },
+      { finger: "Middle", state: "Curled tightly into fist" },
+      { finger: "Ring", state: "Curled tightly into fist" },
+      { finger: "Pinky", state: "Curled tightly into fist" }
+    ]
+  },
+  "U": {
+    sign: "U", category: "Alphabet",
+    description: "Extend index and middle fingers straight upright, glued side-by-side with zero gap between them.",
+    tips: "Keep index and middle fingers pressed tightly together; thumb folds across the ring finger.",
+    keypoints: [
+      { finger: "Thumb", state: "Folded across ring finger" },
+      { finger: "Index", state: "Straight upright (glued together)" },
+      { finger: "Middle", state: "Straight upright (glued together)" },
+      { finger: "Ring", state: "Curled into palm" },
+      { finger: "Pinky", state: "Curled into palm" }
+    ]
+  },
+  "V": {
+    sign: "V", category: "Alphabet",
+    description: "Extend index and middle fingers straight upright and spread them apart in a clear 'V' shape.",
+    tips: "Separate index and middle fingers like the classic peace sign; thumb folds over ring finger.",
+    keypoints: [
+      { finger: "Thumb", state: "Folded across ring finger" },
+      { finger: "Index", state: "Straight upright (spread apart)" },
+      { finger: "Middle", state: "Straight upright (spread apart)" },
+      { finger: "Ring", state: "Curled into palm" },
+      { finger: "Pinky", state: "Curled into palm" }
+    ]
+  },
+  "W": {
+    sign: "W", category: "Alphabet",
+    description: "Extend index, middle, and ring fingers straight upright and spread evenly; thumb holds pinky tip down.",
+    tips: "Spread the three middle fingers evenly to form the letter 'W'; keep thumb holding pinky down.",
+    keypoints: [
+      { finger: "Thumb", state: "Holding pinky tip down" },
+      { finger: "Index", state: "Straight upright spread" },
+      { finger: "Middle", state: "Straight upright spread" },
+      { finger: "Ring", state: "Straight upright spread" },
+      { finger: "Pinky", state: "Curled down under thumb" }
+    ]
+  },
+  "X": {
+    sign: "X", category: "Alphabet",
+    description: "Form a fist and bend only the top joints of index finger into a distinct hooked claw.",
+    tips: "Curl the index finger like a pirate's hook while keeping remaining fingers closed.",
+    keypoints: [
+      { finger: "Thumb", state: "Folded across ring finger" },
+      { finger: "Index", state: "Bent into hooked claw" },
+      { finger: "Middle", state: "Curled into palm" },
+      { finger: "Ring", state: "Curled into palm" },
+      { finger: "Pinky", state: "Curled into palm" }
+    ]
+  },
+  "Y": {
+    sign: "Y", category: "Alphabet",
+    description: "Extend thumb and pinky finger outward as far as possible; curl index, middle, and ring into palm.",
+    tips: "Like the 'hang loose' surfer gesture; keep thumb and pinky extended wide laterally.",
+    keypoints: [
+      { finger: "Thumb", state: "Extended wide laterally" },
+      { finger: "Index", state: "Curled into palm" },
+      { finger: "Middle", state: "Curled into palm" },
+      { finger: "Ring", state: "Curled into palm" },
+      { finger: "Pinky", state: "Extended wide laterally" }
+    ]
+  },
+  "Z": {
+    sign: "Z", category: "Alphabet",
+    description: "Extend index finger forward and trace a crisp zigzag 'Z' in the air with the fingertip.",
+    tips: "Use your extended index finger like a stylus to draw a 'Z' directly in front of your chest.",
+    keypoints: [
+      { finger: "Thumb", state: "Holding middle & ring down" },
+      { finger: "Index", state: "Pointing tracing 'Z' trajectory" },
+      { finger: "Middle", state: "Curled into palm" },
+      { finger: "Ring", state: "Curled into palm" },
+      { finger: "Pinky", state: "Curled into palm" }
+    ]
+  },
+  "I LOVE YOU": {
+    sign: "I LOVE YOU", category: "Phrase",
+    description: "Extend thumb, index, and pinky fingers simultaneously; keep middle and ring fingers curled into the palm.",
+    tips: "Combines the letters 'I', 'L', and 'Y' into one iconic gesture.",
+    keypoints: [
+      { finger: "Thumb", state: "Extended laterally" },
+      { finger: "Index", state: "Straight upright" },
+      { finger: "Middle", state: "Curled into palm" },
+      { finger: "Ring", state: "Curled into palm" },
+      { finger: "Pinky", state: "Straight upright" }
+    ]
+  },
+  "PEACE": {
+    sign: "PEACE", category: "Phrase",
+    description: "Extend index and middle fingers straight upright in an open 'V' shape; curl ring and pinky under thumb.",
+    tips: "Classic peace sign; keep index and middle separated and palm facing forward.",
+    keypoints: [
+      { finger: "Thumb", state: "Folded across ring finger" },
+      { finger: "Index", state: "Straight upright (spread)" },
+      { finger: "Middle", state: "Straight upright (spread)" },
+      { finger: "Ring", state: "Curled into palm" },
+      { finger: "Pinky", state: "Curled into palm" }
+    ]
+  },
+  "OKAY": {
+    sign: "OKAY", category: "Phrase",
+    description: "Touch index fingertip and thumb tip together in an 'O' loop; extend middle, ring, and pinky straight up.",
+    tips: "Keep the three upright fingers fanned out neatly with palm facing forward.",
+    keypoints: [
+      { finger: "Thumb", state: "Pinching index fingertip" },
+      { finger: "Index", state: "Pinching thumb fingertip" },
+      { finger: "Middle", state: "Straight upright" },
+      { finger: "Ring", state: "Straight upright" },
+      { finger: "Pinky", state: "Straight upright" }
+    ]
+  },
+  "THUMBS UP": {
+    sign: "THUMBS UP", category: "Phrase",
+    description: "Make a firm fist and point the thumb straight upward toward the sky.",
+    tips: "Ensure knuckles face sideways and thumb points straight toward the ceiling.",
+    keypoints: [
+      { finger: "Thumb", state: "Pointing straight upward" },
+      { finger: "Index", state: "Curled into tight fist" },
+      { finger: "Middle", state: "Curled into tight fist" },
+      { finger: "Ring", state: "Curled into tight fist" },
+      { finger: "Pinky", state: "Curled into tight fist" }
+    ]
+  },
+  "STOP": {
+    sign: "STOP", category: "Phrase",
+    description: "Hold all five fingers fully extended with open flat palm facing forward directly toward the camera.",
+    tips: "Universal stop handshape; keep fingers comfortably spread with palm pushed forward.",
+    keypoints: [
+      { finger: "Thumb", state: "Extended outward" },
+      { finger: "Index", state: "Extended straight upright" },
+      { finger: "Middle", state: "Extended straight upright" },
+      { finger: "Ring", state: "Extended straight upright" },
+      { finger: "Pinky", state: "Extended straight upright" }
+    ]
+  },
+  "HELLO": {
+    sign: "HELLO", category: "Phrase",
+    description: "Open flat hand positioned near the temple, then saluted slightly outward and forward.",
+    tips: "Friendly wave / salute motion; open hand with fingers together moving outward.",
+    keypoints: [
+      { finger: "Thumb", state: "Extended alongside palm" },
+      { finger: "Index", state: "Straight upright flat" },
+      { finger: "Middle", state: "Straight upright flat" },
+      { finger: "Ring", state: "Straight upright flat" },
+      { finger: "Pinky", state: "Straight upright flat" }
+    ]
+  },
+  "THANK YOU": {
+    sign: "THANK YOU", category: "Phrase",
+    description: "Flat hand starts with fingertips touching the chin/lips, then gently moves outward toward the other person.",
+    tips: "Extend flat hand forward with palm facing slightly upward.",
+    keypoints: [
+      { finger: "Thumb", state: "Extended alongside palm" },
+      { finger: "Index", state: "Straight upright flat" },
+      { finger: "Middle", state: "Straight upright flat" },
+      { finger: "Ring", state: "Straight upright flat" },
+      { finger: "Pinky", state: "Straight upright flat" }
+    ]
+  },
+  "YES": {
+    sign: "YES", category: "Phrase",
+    description: "Make an 'S' fist and nod it up and down from the wrist like a head nodding yes.",
+    tips: "Hold a firm fist and tilt the wrist down and back up.",
+    keypoints: [
+      { finger: "Thumb", state: "Folded across knuckles" },
+      { finger: "Index", state: "Curled into fist" },
+      { finger: "Middle", state: "Curled into fist" },
+      { finger: "Ring", state: "Curled into fist" },
+      { finger: "Pinky", state: "Curled into fist" }
+    ]
+  },
+  "NO": {
+    sign: "NO", category: "Phrase",
+    description: "Snap index and middle fingertips down onto the thumb tip like a closing bird's beak.",
+    tips: "Quick closing tap of index + middle onto thumb tip.",
+    keypoints: [
+      { finger: "Thumb", state: "Tapping index & middle tips" },
+      { finger: "Index", state: "Tapping thumb tip" },
+      { finger: "Middle", state: "Tapping thumb tip" },
+      { finger: "Ring", state: "Curled into palm" },
+      { finger: "Pinky", state: "Curled into palm" }
+    ]
+  },
+  "PLEASE": {
+    sign: "PLEASE", category: "Phrase",
+    description: "Flat open palm rubs in a gentle clockwise circle over the center of your chest.",
+    tips: "Keep fingers together with palm flat facing the chest.",
+    keypoints: [
+      { finger: "Thumb", state: "Extended alongside palm" },
+      { finger: "Index", state: "Straight upright flat" },
+      { finger: "Middle", state: "Straight upright flat" },
+      { finger: "Ring", state: "Straight upright flat" },
+      { finger: "Pinky", state: "Straight upright flat" }
+    ]
+  },
+  "0": {
+    sign: "0", category: "Number",
+    description: "Curved open oval with all fingertips touching the thumb tip, identical to letter 'O'.",
+    tips: "Form an oval zero aperture with all finger pads touching thumb pad.",
+    keypoints: [
+      { finger: "Thumb", state: "Curved touching tips" },
+      { finger: "Index", state: "Curved touching thumb" },
+      { finger: "Middle", state: "Curved touching thumb" },
+      { finger: "Ring", state: "Curved touching thumb" },
+      { finger: "Pinky", state: "Curved touching thumb" }
+    ]
+  },
+  "1": {
+    sign: "1", category: "Number",
+    description: "Index finger pointing straight up; thumb curls over remaining curled fingers.",
+    tips: "Only index finger points up; palm faces forward.",
+    keypoints: [
+      { finger: "Thumb", state: "Holding curled fingers" },
+      { finger: "Index", state: "Straight upright" },
+      { finger: "Middle", state: "Curled into palm" },
+      { finger: "Ring", state: "Curled into palm" },
+      { finger: "Pinky", state: "Curled into palm" }
+    ]
+  },
+  "2": {
+    sign: "2", category: "Number",
+    description: "Index and middle fingers extended straight upright in a 'V' shape; palm facing forward.",
+    tips: "Identical to 'V' handshape; index and middle fingers spread.",
+    keypoints: [
+      { finger: "Thumb", state: "Holding ring & pinky" },
+      { finger: "Index", state: "Straight upright (spread)" },
+      { finger: "Middle", state: "Straight upright (spread)" },
+      { finger: "Ring", state: "Curled into palm" },
+      { finger: "Pinky", state: "Curled into palm" }
+    ]
+  },
+  "3": {
+    sign: "3", category: "Number",
+    description: "Thumb, index, and middle fingers extended; ring and pinky curled into palm.",
+    tips: "ASL 3 uses thumb, index, and middle, unlike the common European gesture.",
+    keypoints: [
+      { finger: "Thumb", state: "Extended outward" },
+      { finger: "Index", state: "Straight upright" },
+      { finger: "Middle", state: "Straight upright" },
+      { finger: "Ring", state: "Curled into palm" },
+      { finger: "Pinky", state: "Curled into palm" }
+    ]
+  },
+  "4": {
+    sign: "4", category: "Number",
+    description: "All four fingers extended straight upright and spread slightly; thumb folded flat across palm.",
+    tips: "Thumb tucks firmly across the palm while four fingers stand tall.",
+    keypoints: [
+      { finger: "Thumb", state: "Folded flat across palm" },
+      { finger: "Index", state: "Straight upright" },
+      { finger: "Middle", state: "Straight upright" },
+      { finger: "Ring", state: "Straight upright" },
+      { finger: "Pinky", state: "Straight upright" }
+    ]
+  },
+  "5": {
+    sign: "5", category: "Number",
+    description: "All five fingers extended wide with open palm facing forward.",
+    tips: "Identical to 'STOP' handshape with fingers spread comfortably.",
+    keypoints: [
+      { finger: "Thumb", state: "Extended outward" },
+      { finger: "Index", state: "Straight upright" },
+      { finger: "Middle", state: "Straight upright" },
+      { finger: "Ring", state: "Straight upright" },
+      { finger: "Pinky", state: "Straight upright" }
+    ]
+  },
+  "6": {
+    sign: "6", category: "Number",
+    description: "Thumb touches pinky fingertip; index, middle, and ring fingers extended straight up.",
+    tips: "Remember: 6 touches pinky (smallest finger).",
+    keypoints: [
+      { finger: "Thumb", state: "Touching pinky fingertip" },
+      { finger: "Index", state: "Straight upright" },
+      { finger: "Middle", state: "Straight upright" },
+      { finger: "Ring", state: "Straight upright" },
+      { finger: "Pinky", state: "Touching thumb fingertip" }
+    ]
+  },
+  "7": {
+    sign: "7", category: "Number",
+    description: "Thumb touches ring fingertip; index, middle, and pinky fingers extended straight up.",
+    tips: "Remember: 7 touches ring finger.",
+    keypoints: [
+      { finger: "Thumb", state: "Touching ring fingertip" },
+      { finger: "Index", state: "Straight upright" },
+      { finger: "Middle", state: "Straight upright" },
+      { finger: "Ring", state: "Touching thumb fingertip" },
+      { finger: "Pinky", state: "Straight upright" }
+    ]
+  },
+  "8": {
+    sign: "8", category: "Number",
+    description: "Thumb touches middle fingertip; index, ring, and pinky fingers extended straight up.",
+    tips: "Remember: 8 touches middle finger.",
+    keypoints: [
+      { finger: "Thumb", state: "Touching middle fingertip" },
+      { finger: "Index", state: "Straight upright" },
+      { finger: "Middle", state: "Touching thumb fingertip" },
+      { finger: "Ring", state: "Straight upright" },
+      { finger: "Pinky", state: "Straight upright" }
+    ]
+  },
+  "9": {
+    sign: "9", category: "Number",
+    description: "Thumb touches index fingertip (pinched circle); middle, ring, and pinky fingers extended straight up.",
+    tips: "Identical to letter 'F' and 'OKAY' handshape; 9 touches index finger.",
+    keypoints: [
+      { finger: "Thumb", state: "Touching index fingertip" },
+      { finger: "Index", state: "Touching thumb fingertip" },
+      { finger: "Middle", state: "Straight upright" },
+      { finger: "Ring", state: "Straight upright" },
+      { finger: "Pinky", state: "Straight upright" }
+    ]
+  }
+};
+
+// ================= 3D CANONICAL LANDMARK GENERATOR =================
+// Produces full 3D coordinates [x, y, z] for canonical ASL handshapes
 function getCanonicalLandmarks(sign) {
-  const s = sign.toUpperCase().trim();
+  const s = (sign || "A").toUpperCase().trim();
   
-  // Base hand dimensions (centered in 0.0 - 1.0 space)
-  const wrist = [0.50, 0.84];
+  // Base 3D coordinates (x: 0..1, y: 0..1, z: centered depth [-0.5..0.5])
+  const wrist = [0.50, 0.84, 0.0];
   const mcps = [
-    [0.40, 0.72], // Thumb CMC (1)
-    [0.42, 0.52], // Index MCP (5)
-    [0.50, 0.50], // Middle MCP (9)
-    [0.58, 0.52], // Ring MCP (13)
-    [0.65, 0.56], // Pinky MCP (17)
+    [0.40, 0.72, 0.02], // Thumb CMC (1)
+    [0.42, 0.52, 0.0],  // Index MCP (5)
+    [0.50, 0.50, 0.0],  // Middle MCP (9)
+    [0.58, 0.52, 0.0],  // Ring MCP (13)
+    [0.65, 0.56, 0.0]   // Pinky MCP (17)
   ];
 
-  // Helper to build a finger's 4 joints [MCP, PIP, DIP, TIP]
-  function buildFinger(mcpIdx, type, spreadDx = 0, angleDeg = 0) {
+  function buildFinger(mcpIdx, type, spreadDx = 0) {
     const mcp = mcps[mcpIdx];
-    const mx = mcp[0];
-    const my = mcp[1];
+    const mx = mcp[0], my = mcp[1], mz = mcp[2];
 
     if (type === "up") {
       const sx = spreadDx;
       return [
-        [mx, my],
-        [mx + sx * 0.3, my - 0.12],
-        [mx + sx * 0.7, my - 0.24],
-        [mx + sx * 1.0, my - 0.36]
+        [mx, my, mz],
+        [mx + sx * 0.3, my - 0.12, mz - 0.01],
+        [mx + sx * 0.7, my - 0.24, mz - 0.02],
+        [mx + sx * 1.0, my - 0.36, mz - 0.03]
       ];
     } else if (type === "curl") {
       return [
-        [mx, my],
-        [mx, my + 0.04],
-        [mx, my + 0.10],
-        [mx, my + 0.14]
+        [mx, my, mz],
+        [mx, my + 0.03, mz + 0.07],
+        [mx, my + 0.08, mz + 0.13],
+        [mx, my + 0.12, mz + 0.15]
       ];
     } else if (type === "hook") {
       return [
-        [mx, my],
-        [mx, my - 0.10],
-        [mx + 0.05, my - 0.06],
-        [mx + 0.04, my + 0.02]
+        [mx, my, mz],
+        [mx, my - 0.10, mz + 0.03],
+        [mx + 0.05, my - 0.06, mz + 0.10],
+        [mx + 0.04, my + 0.02, mz + 0.12]
       ];
     } else if (type === "touch_thumb") {
       return [
-        [mx, my],
-        [mx - 0.04, my - 0.08],
-        [mx - 0.08, my - 0.04],
-        [0.38, 0.54] // touches thumb
+        [mx, my, mz],
+        [mx - 0.04, my - 0.07, mz + 0.05],
+        [mx - 0.08, my - 0.04, mz + 0.08],
+        [0.38, 0.54, 0.10]
       ];
     } else if (type === "cross") {
       return [
-        [mx, my],
-        [mx + 0.04, my - 0.12],
-        [mx + 0.07, my - 0.24],
-        [mx + 0.08, my - 0.36]
+        [mx, my, mz],
+        [mx + 0.04, my - 0.12, mz + 0.04],
+        [mx + 0.07, my - 0.24, mz + 0.06],
+        [mx + 0.08, my - 0.36, mz + 0.07]
       ];
     } else if (type === "side") {
       return [
-        [mx, my],
-        [mx - 0.10, my],
-        [mx - 0.20, my],
-        [mx - 0.28, my]
+        [mx, my, mz],
+        [mx - 0.10, my, mz],
+        [mx - 0.20, my, mz],
+        [mx - 0.28, my, mz]
       ];
     } else if (type === "down") {
       return [
-        [mx, my],
-        [mx, my + 0.12],
-        [mx, my + 0.24],
-        [mx, my + 0.34]
+        [mx, my, mz],
+        [mx, my + 0.12, mz + 0.05],
+        [mx, my + 0.24, mz + 0.08],
+        [mx, my + 0.34, mz + 0.10]
       ];
     } else if (type === "curve") {
       return [
-        [mx, my],
-        [mx - 0.04, my - 0.08],
-        [mx - 0.08, my - 0.04],
-        [mx - 0.10, my + 0.02]
+        [mx, my, mz],
+        [mx - 0.04, my - 0.08, mz + 0.07],
+        [mx - 0.08, my - 0.04, mz + 0.13],
+        [mx - 0.10, my + 0.02, mz + 0.15]
       ];
     }
-    return [[mx, my], [mx, my - 0.1], [mx, my - 0.2], [mx, my - 0.3]];
+    return [[mx, my, mz], [mx, my - 0.1, mz], [mx, my - 0.2, mz], [mx, my - 0.3, mz]];
   }
 
   function buildThumb(type) {
     if (type === "side_up") { // A
-      return [[0.40, 0.72], [0.36, 0.62], [0.35, 0.52], [0.35, 0.42]];
-    } else if (type === "flat_across") { // B
-      return [[0.40, 0.72], [0.46, 0.68], [0.52, 0.66], [0.56, 0.65]];
-    } else if (type === "extended_left") { // L, Y, ILY
-      return [[0.38, 0.72], [0.28, 0.68], [0.18, 0.65], [0.08, 0.65]];
+      return [[0.40, 0.72, 0.02], [0.36, 0.62, 0.03], [0.35, 0.52, 0.04], [0.35, 0.42, 0.05]];
+    } else if (type === "flat_across") { // B, E, 4
+      return [[0.40, 0.72, 0.02], [0.46, 0.68, 0.06], [0.52, 0.66, 0.08], [0.56, 0.65, 0.09]];
+    } else if (type === "extended_left") { // L, Y, ILY, STOP, 3
+      return [[0.38, 0.72, 0.02], [0.28, 0.68, 0.03], [0.18, 0.65, 0.04], [0.08, 0.65, 0.04]];
     } else if (type === "thumbs_up") { // THUMBS UP
-      return [[0.38, 0.70], [0.34, 0.56], [0.32, 0.42], [0.30, 0.26]];
-    } else if (type === "thumbs_down") { // THUMBS DOWN
-      return [[0.38, 0.70], [0.38, 0.80], [0.38, 0.90], [0.38, 0.98]];
+      return [[0.38, 0.70, 0.02], [0.34, 0.56, 0.03], [0.32, 0.42, 0.05], [0.30, 0.26, 0.06]];
+    } else if (type === "thumbs_down") { // THUMBS DOWN, Q
+      return [[0.38, 0.70, 0.02], [0.38, 0.80, 0.04], [0.38, 0.90, 0.06], [0.38, 0.98, 0.08]];
     } else if (type === "pinch_index") { // F, OKAY, 9
-      return [[0.40, 0.72], [0.38, 0.62], [0.38, 0.54], [0.38, 0.54]];
+      return [[0.40, 0.72, 0.02], [0.38, 0.62, 0.05], [0.38, 0.54, 0.08], [0.38, 0.54, 0.09]];
     } else if (type === "curve_c") { // C
-      return [[0.38, 0.72], [0.30, 0.68], [0.26, 0.60], [0.28, 0.52]];
+      return [[0.38, 0.72, 0.02], [0.30, 0.68, 0.06], [0.26, 0.60, 0.11], [0.28, 0.52, 0.14]];
     } else if (type === "curve_o") { // O, 0
-      return [[0.38, 0.72], [0.38, 0.62], [0.42, 0.54], [0.45, 0.50]];
+      return [[0.38, 0.72, 0.02], [0.38, 0.62, 0.06], [0.42, 0.54, 0.10], [0.45, 0.50, 0.12]];
     } else if (type === "tuck_1") { // T
-      return [[0.40, 0.72], [0.44, 0.60], [0.44, 0.50], [0.45, 0.44]];
+      return [[0.40, 0.72, 0.02], [0.44, 0.60, 0.05], [0.44, 0.50, 0.07], [0.45, 0.44, 0.09]];
     } else if (type === "tuck_2") { // N
-      return [[0.40, 0.72], [0.48, 0.60], [0.52, 0.52], [0.53, 0.46]];
+      return [[0.40, 0.72, 0.02], [0.48, 0.60, 0.05], [0.52, 0.52, 0.07], [0.53, 0.46, 0.09]];
     } else if (type === "tuck_3") { // M
-      return [[0.40, 0.72], [0.52, 0.60], [0.58, 0.54], [0.60, 0.48]];
-    } else if (type === "across_knuckles") { // S
-      return [[0.40, 0.72], [0.46, 0.64], [0.52, 0.62], [0.56, 0.62]];
+      return [[0.40, 0.72, 0.02], [0.52, 0.60, 0.05], [0.58, 0.54, 0.07], [0.60, 0.48, 0.09]];
+    } else if (type === "across_knuckles") { // S, I, J
+      return [[0.40, 0.72, 0.02], [0.46, 0.64, 0.08], [0.52, 0.62, 0.11], [0.56, 0.62, 0.12]];
     } else if (type === "between_k") { // K, P
-      return [[0.40, 0.72], [0.44, 0.60], [0.46, 0.48], [0.46, 0.38]];
+      return [[0.40, 0.72, 0.02], [0.44, 0.60, 0.04], [0.46, 0.48, 0.06], [0.46, 0.38, 0.08]];
     } else if (type === "side_horiz") { // G
-      return [[0.38, 0.70], [0.30, 0.68], [0.20, 0.66], [0.12, 0.65]];
+      return [[0.38, 0.70, 0.02], [0.30, 0.68, 0.03], [0.20, 0.66, 0.04], [0.12, 0.65, 0.04]];
     } else if (type === "touch_pinky") { // 6
-      return [[0.40, 0.72], [0.48, 0.65], [0.56, 0.60], [0.62, 0.58]];
+      return [[0.40, 0.72, 0.02], [0.48, 0.65, 0.06], [0.56, 0.60, 0.09], [0.62, 0.58, 0.11]];
     } else if (type === "touch_ring") { // 7
-      return [[0.40, 0.72], [0.46, 0.62], [0.52, 0.54], [0.54, 0.50]];
+      return [[0.40, 0.72, 0.02], [0.46, 0.62, 0.06], [0.52, 0.54, 0.09], [0.54, 0.50, 0.11]];
     } else if (type === "touch_middle") { // 8
-      return [[0.40, 0.72], [0.44, 0.60], [0.48, 0.52], [0.48, 0.48]];
+      return [[0.40, 0.72, 0.02], [0.44, 0.60, 0.06], [0.48, 0.52, 0.09], [0.48, 0.48, 0.11]];
     }
     // Default folded
-    return [[0.40, 0.72], [0.44, 0.65], [0.48, 0.62], [0.50, 0.60]];
+    return [[0.40, 0.72, 0.02], [0.44, 0.65, 0.06], [0.48, 0.62, 0.09], [0.50, 0.60, 0.10]];
   }
 
-  // Define per sign finger configurations
   let thumbT = "folded", idxT = "curl", midT = "curl", ringT = "curl", pnkT = "curl";
   let idxSpread = 0, midSpread = 0, ringSpread = 0, pnkSpread = 0;
 
@@ -158,7 +750,7 @@ function getCanonicalLandmarks(sign) {
     case "A": thumbT = "side_up"; break;
     case "B": thumbT = "flat_across"; idxT = midT = ringT = pnkT = "up"; break;
     case "C": thumbT = "curve_c"; idxT = midT = ringT = pnkT = "curve"; break;
-    case "D": thumbT = "touch_index"; idxT = "up"; midT = ringT = pnkT = "touch_thumb"; break;
+    case "D": thumbT = "touch_thumb"; idxT = "up"; midT = ringT = pnkT = "touch_thumb"; break;
     case "E": thumbT = "flat_across"; idxT = midT = ringT = pnkT = "curl"; break;
     case "F": thumbT = "pinch_index"; idxT = "touch_thumb"; midT = ringT = pnkT = "up"; midSpread = -0.04; ringSpread = 0.0; pnkSpread = 0.04; break;
     case "G": thumbT = "side_horiz"; idxT = "side"; break;
@@ -200,7 +792,6 @@ function getCanonicalLandmarks(sign) {
       thumbT = "side_up"; idxT = "up"; midT = "up"; ringT = "up"; pnkT = "up";
   }
 
-  // Assemble full 21 landmarks
   const lms = [wrist];
   lms.push(...buildThumb(thumbT));
   lms.push(...buildFinger(1, idxT, idxSpread));
@@ -211,8 +802,59 @@ function getCanonicalLandmarks(sign) {
   return lms;
 }
 
-// ================= CANONICAL SKELETON RENDERER =================
-function renderReferenceSkeleton(canvas, signName, options = {}) {
+// Neutral relaxed open hand pose for transition animations
+function getNeutralHandLandmarks() {
+  const wrist = [0.50, 0.84, 0.0];
+  const thumb = [
+    [0.40, 0.72, 0.02],
+    [0.34, 0.65, 0.03],
+    [0.28, 0.60, 0.04],
+    [0.22, 0.56, 0.05]
+  ];
+  const index = [
+    [0.42, 0.52, 0.0],
+    [0.40, 0.40, 0.0],
+    [0.38, 0.28, 0.0],
+    [0.36, 0.16, 0.0]
+  ];
+  const middle = [
+    [0.50, 0.50, 0.0],
+    [0.50, 0.38, 0.0],
+    [0.50, 0.26, 0.0],
+    [0.50, 0.14, 0.0]
+  ];
+  const ring = [
+    [0.58, 0.52, 0.0],
+    [0.60, 0.40, 0.0],
+    [0.62, 0.28, 0.0],
+    [0.64, 0.16, 0.0]
+  ];
+  const pinky = [
+    [0.65, 0.56, 0.0],
+    [0.69, 0.45, 0.0],
+    [0.72, 0.35, 0.0],
+    [0.75, 0.24, 0.0]
+  ];
+  return [wrist, ...thumb, ...index, ...middle, ...ring, ...pinky];
+}
+
+// Linear interpolation between two 3D landmark sets
+function interpolate3DLandmarks(lmsA, lmsB, t) {
+  if (!lmsA || !lmsB) return lmsB || lmsA;
+  const clampedT = Math.max(0, Math.min(1, t));
+  return lmsA.map((ptA, i) => {
+    const ptB = lmsB[i] || ptA;
+    return [
+      ptA[0] + (ptB[0] - ptA[0]) * clampedT,
+      ptA[1] + (ptB[1] - ptA[1]) * clampedT,
+      (ptA[2] || 0) + ((ptB[2] || 0) - (ptA[2] || 0)) * clampedT
+    ];
+  });
+}
+
+// ================= 3D INTERACTIVE SKELETON RENDERER =================
+// Renders canonical landmarks with true 3D perspective rotation, depth foreshortening, and unique 5-finger color coding
+function renderReferenceSkeleton(canvas, signNameOrLms, options = {}) {
   if (!canvas) return;
   const ctx = canvas.getContext("2d");
   const w = canvas.width;
@@ -220,82 +862,160 @@ function renderReferenceSkeleton(canvas, signName, options = {}) {
 
   ctx.clearRect(0, 0, w, h);
 
-  const lms = getCanonicalLandmarks(signName);
+  let lms;
+  let signName = "";
+  if (typeof signNameOrLms === "string") {
+    signName = signNameOrLms;
+    lms = getCanonicalLandmarks(signNameOrLms);
+  } else if (Array.isArray(signNameOrLms)) {
+    lms = signNameOrLms;
+    signName = options.signName || "";
+  }
   if (!lms || lms.length < 21) return;
 
-  const scale = options.scale || 0.82;
+  const scale = options.scale || 0.84;
   const cx = w / 2;
   const cy = h / 2 + (options.offsetY || 8);
+  const yaw = options.yaw || 0.0;     // Y-axis rotation (radians)
+  const pitch = options.pitch || 0.0; // X-axis rotation (radians)
 
-  // Transform coordinates relative to canvas center
-  const pts = lms.map(p => {
-    return [
-      cx + (p[0] - 0.50) * w * scale,
-      cy + (p[1] - 0.55) * h * scale
-    ];
+  // Camera perspective parameters
+  const camDist = 1.8;
+  const cosY = Math.cos(yaw);
+  const sinY = Math.sin(yaw);
+  const cosP = Math.cos(pitch);
+  const sinP = Math.sin(pitch);
+
+  // 3D rotation & perspective projection for each landmark
+  const projPts = lms.map((pt, i) => {
+    // Center point relative to palm center (0.50, 0.55, 0.0)
+    const x0 = (pt[0] - 0.50);
+    const y0 = (pt[1] - 0.55);
+    const z0 = (pt[2] !== undefined ? pt[2] : 0.0);
+
+    // 1. Rotate around Y axis (yaw)
+    const x1 = x0 * cosY + z0 * sinY;
+    const z1 = -x0 * sinY + z0 * cosY;
+    const y1 = y0;
+
+    // 2. Rotate around X axis (pitch)
+    const y2 = y1 * cosP - z1 * sinP;
+    const z2 = y1 * sinP + z1 * cosP;
+    const x2 = x1;
+
+    // 3. Perspective projection
+    const fov = camDist / (camDist + z2);
+    const px = cx + x2 * w * scale * fov;
+    const py = cy + y2 * h * scale * fov;
+
+    return {
+      x: px,
+      y: py,
+      z: z2,
+      fov: fov,
+      idx: i
+    };
   });
 
-  // 1. Draw Glowing Bone Connections
-  ctx.lineWidth = options.lineWidth || 3;
-  ctx.strokeStyle = options.boneColor || "rgba(0, 240, 255, 0.9)";
-  ctx.shadowColor = options.glowColor || "#00f0ff";
-  ctx.shadowBlur = options.glowBlur || 10;
+  // Base line thickness & glow
+  const baseLineWidth = options.lineWidth || 3.5;
+  const baseTipRadius = options.tipRadius || 6.5;
+  const baseJointRadius = options.jointRadius || 3.8;
 
-  for (const [startIdx, endIdx] of HAND_CONNECTIONS) {
-    const p1 = pts[startIdx];
-    const p2 = pts[endIdx];
-    if (p1 && p2) {
-      ctx.beginPath();
-      ctx.moveTo(p1[0], p1[1]);
-      ctx.lineTo(p2[0], p2[1]);
-      ctx.stroke();
-    }
-  }
+  // 1. Draw Glowing 3D Bone Connections with Finger-Specific Colors
+  HAND_CONNECTIONS.forEach(([startIdx, endIdx], connIdx) => {
+    const p1 = projPts[startIdx];
+    const p2 = projPts[endIdx];
+    if (!p1 || !p2) return;
 
-  // 2. Draw Landmark Joints & Highlighted Fingertips
-  ctx.shadowBlur = 0;
-  pts.forEach((pt, idx) => {
+    const avgFov = (p1.fov + p2.fov) / 2;
+    const connColor = CONNECTION_COLORS[connIdx] || FINGER_COLORS.palm;
+
+    ctx.save();
+    ctx.lineWidth = Math.max(1.5, baseLineWidth * avgFov);
+    ctx.strokeStyle = connColor;
+    ctx.shadowColor = connColor;
+    ctx.shadowBlur = (options.glowBlur !== undefined ? options.glowBlur : 10) * avgFov;
+    ctx.lineCap = "round";
+
     ctx.beginPath();
-    if ([4, 8, 12, 16, 20].includes(idx)) {
-      // Fingertip Nodes (Hot Pink / Magenta)
-      ctx.fillStyle = options.tipColor || "#f72585";
-      ctx.arc(pt[0], pt[1], options.tipRadius || 5.5, 0, 2 * Math.PI);
-      ctx.fill();
-      ctx.lineWidth = 1.5;
-      ctx.strokeStyle = "#ffffff";
-      ctx.stroke();
-    } else {
-      // Inner Joints (Electric Cyan)
-      ctx.fillStyle = options.jointColor || "#00f0ff";
-      ctx.arc(pt[0], pt[1], options.jointRadius || 3.5, 0, 2 * Math.PI);
-      ctx.fill();
-    }
+    ctx.moveTo(p1.x, p1.y);
+    ctx.lineTo(p2.x, p2.y);
+    ctx.stroke();
+    ctx.restore();
   });
 
-  // 3. Optional Motion Indicator Arrow for Dynamic Signs (J, Z, HELLO, etc.)
-  if (["J", "Z", "HELLO", "THANK YOU", "YES", "NO", "PLEASE"].includes(signName.toUpperCase())) {
+  // 2. Draw 3D Landmark Joints & Glowing Fingertip Indicators
+  // Sort joints back-to-front by depth (z) so closer joints draw on top
+  const sortedIndices = projPts.map((p, idx) => idx).sort((a, b) => projPts[a].z - projPts[b].z);
+
+  sortedIndices.forEach(idx => {
+    const pt = projPts[idx];
+    const isTip = [4, 8, 12, 16, 20].includes(idx);
+    const jointColor = JOINT_COLORS[idx] || "#00f0ff";
+
+    ctx.save();
+    if (isTip) {
+      // Fingertip Node: Outer glow aura with vibrant finger color + white core pip
+      const r = Math.max(3, baseTipRadius * pt.fov);
+      ctx.shadowColor = jointColor;
+      ctx.shadowBlur = 12 * pt.fov;
+      ctx.fillStyle = jointColor;
+
+      ctx.beginPath();
+      ctx.arc(pt.x, pt.y, r, 0, 2 * Math.PI);
+      ctx.fill();
+
+      // Inner white pip for crisp contrast
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = "#ffffff";
+      ctx.beginPath();
+      ctx.arc(pt.x, pt.y, r * 0.45, 0, 2 * Math.PI);
+      ctx.fill();
+    } else {
+      // Inner Joint Node
+      const r = Math.max(2, baseJointRadius * pt.fov);
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = jointColor;
+
+      ctx.beginPath();
+      ctx.arc(pt.x, pt.y, r, 0, 2 * Math.PI);
+      ctx.fill();
+
+      // Subtle edge ring
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.4)";
+      ctx.stroke();
+    }
+    ctx.restore();
+  });
+
+  // 3. Motion Indicator Trajectory for Dynamic Signs (J, Z, etc.)
+  const upperSign = signName.toUpperCase().trim();
+  if (["J", "Z", "HELLO", "THANK YOU", "YES", "NO", "PLEASE"].includes(upperSign)) {
+    ctx.save();
     ctx.strokeStyle = "#ffe600";
     ctx.fillStyle = "#ffe600";
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 2.2;
     ctx.setLineDash([4, 4]);
     ctx.beginPath();
-    if (signName.toUpperCase() === "J") {
-      ctx.arc(w * 0.72, h * 0.65, 20, 0, Math.PI * 0.8);
-    } else if (signName.toUpperCase() === "Z") {
+    if (upperSign === "J") {
+      ctx.arc(w * 0.72, h * 0.65, 20 * scale, 0, Math.PI * 0.8);
+    } else if (upperSign === "Z") {
       ctx.moveTo(w * 0.35, h * 0.25);
       ctx.lineTo(w * 0.65, h * 0.25);
       ctx.lineTo(w * 0.35, h * 0.45);
       ctx.lineTo(w * 0.65, h * 0.45);
     } else {
-      ctx.moveTo(w * 0.25, h * 0.25);
-      ctx.lineTo(w * 0.75, h * 0.25);
+      ctx.moveTo(w * 0.25, h * 0.22);
+      ctx.lineTo(w * 0.75, h * 0.22);
     }
     ctx.stroke();
     ctx.setLineDash([]);
+    ctx.restore();
   }
 }
 
-// ================= MAIN APPLICATION CONTROLLER =================
 class UnmuteApp {
   constructor() {
     this.activeTab = "camera-tab";
@@ -415,7 +1135,7 @@ class UnmuteApp {
     }
     this.practiceFeedbackBanner = document.getElementById("practice-feedback-banner");
 
-    // Modal Inspector
+    // Modal Inspector & 3D Interactive Visualizer
     this.inspectorModal = document.getElementById("sign-inspector-modal");
     this.modalCloseBtn = document.getElementById("modal-close-btn");
     this.modalSignTitle = document.getElementById("modal-sign-title");
@@ -424,7 +1144,22 @@ class UnmuteApp {
     this.modalSignDesc = document.getElementById("modal-sign-desc");
     this.modalSignTips = document.getElementById("modal-sign-tips");
     this.btnModalPractice = document.getElementById("btn-modal-practice");
+    this.btnViewPracticeGuide = document.getElementById("btn-view-practice-guide");
+    this.btnModalAnimToggle = document.getElementById("btn-modal-anim-toggle");
+    this.modalViewPresetBtns = document.querySelectorAll(".view-preset-btn[data-view]");
+    this.modalCanvasWrapper = document.querySelector(".canvas-3d-wrapper");
+    this.modalKeypointsList = document.getElementById("modal-keypoints-list");
     this.activeInspectedSign = null;
+
+    // 3D Perspective & Animated Guide State
+    this.modalYaw = 0.0;
+    this.modalPitch = 0.0;
+    this.isModalDragging = false;
+    this.modalDragLastX = 0;
+    this.modalDragLastY = 0;
+    this.modalAnimActive = false;
+    this.modalAnimStartTime = 0;
+    this.modalAnimReqId = null;
 
     // Custom Trainer
     this.customGestureName = document.getElementById("custom-gesture-name");
@@ -512,7 +1247,7 @@ class UnmuteApp {
     this.btnSkipChallenge.addEventListener("click", () => this.nextPracticeChallenge());
     this.btnNextChallenge.addEventListener("click", () => this.nextPracticeChallenge());
 
-    // Modal Inspector
+    // Modal Inspector & Practice Guide Buttons
     if (this.modalCloseBtn) {
       this.modalCloseBtn.addEventListener("click", () => this.closeInspectorModal());
     }
@@ -531,6 +1266,16 @@ class UnmuteApp {
         }
       });
     }
+    if (this.btnViewPracticeGuide) {
+      this.btnViewPracticeGuide.addEventListener("click", () => {
+        if (this.currentPracticeItem) {
+          this.openInspectorModal(this.currentPracticeItem);
+        }
+      });
+    }
+
+    // Initialize 3D Orbit Drag and Animation Controls
+    this.initModal3DControls();
 
     this.btnStartRecord.addEventListener("click", () => this.startCustomRecording());
     this.btnTrainCustom.addEventListener("click", () => this.saveCustomGesture());
@@ -1067,11 +1812,16 @@ class UnmuteApp {
       this.practiceTargetName.textContent = targetSign.length === 1 ? `Letter '${targetSign}'` : `Sign: ${targetSign}`;
     }
 
-    const dictItem = this.dictionaryData.find(d => d.sign === targetSign);
+    const dictItem = (this.dictionaryData || []).find(d => d.sign === targetSign);
+    const fallbackItem = FALLBACK_SIGN_GUIDE[targetSign];
     if (this.practiceTargetDesc) {
-      this.practiceTargetDesc.textContent = dictItem 
-        ? `${dictItem.description} (Tip: ${dictItem.tips})` 
-        : "Form the sign clearly in front of the camera.";
+      if (dictItem) {
+        this.practiceTargetDesc.textContent = `${dictItem.description} (Tip: ${dictItem.tips})`;
+      } else if (fallbackItem) {
+        this.practiceTargetDesc.textContent = `${fallbackItem.description} (Tip: ${fallbackItem.tips})`;
+      } else {
+        this.practiceTargetDesc.textContent = `Form the sign for '${targetSign}' clearly in front of the camera.`;
+      }
     }
 
     if (this.practiceMatchPct) this.practiceMatchPct.textContent = "0%";
@@ -1262,33 +2012,268 @@ class UnmuteApp {
     }
   }
 
-  // ================= SIGN INSPECTOR MODAL =================
-  openInspectorModal(item) {
-    if (!this.inspectorModal) return;
-    this.activeInspectedSign = item.sign;
-
-    this.modalSignTitle.textContent = item.sign.length === 1 ? `Letter '${item.sign}'` : `Sign: ${item.sign}`;
-    this.modalSignCategory.textContent = item.category;
-    this.modalSignDesc.textContent = item.description;
-    this.modalSignTips.textContent = `💡 ${item.tips}`;
-
-    this.inspectorModal.style.display = "flex";
-
-    // Draw high-resolution reference skeleton
-    if (this.modalSignCanvas) {
-      renderReferenceSkeleton(this.modalSignCanvas, item.sign, {
-        scale: 0.90,
-        lineWidth: 4,
-        tipRadius: 7,
-        jointRadius: 4.5,
-        glowBlur: 14
+  // ================= 3D INTERACTIVE CONTROLS & ANIMATION =================
+  initModal3DControls() {
+    // 3D Angle Preset Buttons (Front, Side, Top, Isometric Orbit)
+    if (this.modalViewPresetBtns) {
+      this.modalViewPresetBtns.forEach(btn => {
+        btn.addEventListener("click", () => {
+          this.modalViewPresetBtns.forEach(b => b.classList.remove("active"));
+          btn.classList.add("active");
+          const view = btn.dataset.view;
+          if (view === "front") {
+            this.modalYaw = 0.0;
+            this.modalPitch = 0.0;
+          } else if (view === "side") {
+            this.modalYaw = 1.35;
+            this.modalPitch = 0.10;
+          } else if (view === "top") {
+            this.modalYaw = 0.0;
+            this.modalPitch = 1.45;
+          } else if (view === "isometric") {
+            this.modalYaw = 0.65;
+            this.modalPitch = 0.40;
+          }
+          this.redrawModal3D();
+        });
       });
     }
+
+    // Animation Formation Toggle
+    if (this.btnModalAnimToggle) {
+      this.btnModalAnimToggle.addEventListener("click", () => this.toggleModalAnimation());
+    }
+
+    // Mouse & Touch 360° Drag Orbit Handlers
+    const targetEl = this.modalCanvasWrapper || this.modalSignCanvas;
+    if (targetEl) {
+      const onStart = (clientX, clientY) => {
+        this.isModalDragging = true;
+        this.modalDragLastX = clientX;
+        this.modalDragLastY = clientY;
+      };
+
+      const onMove = (clientX, clientY) => {
+        if (!this.isModalDragging) return;
+        const dx = clientX - this.modalDragLastX;
+        const dy = clientY - this.modalDragLastY;
+        this.modalDragLastX = clientX;
+        this.modalDragLastY = clientY;
+
+        this.modalYaw += dx * 0.012;
+        this.modalPitch = Math.max(-1.45, Math.min(1.45, this.modalPitch + dy * 0.012));
+
+        if (this.modalViewPresetBtns) {
+          this.modalViewPresetBtns.forEach(b => b.classList.remove("active"));
+        }
+        this.redrawModal3D();
+      };
+
+      const onEnd = () => {
+        this.isModalDragging = false;
+      };
+
+      targetEl.addEventListener("mousedown", e => {
+        e.preventDefault();
+        onStart(e.clientX, e.clientY);
+      });
+      window.addEventListener("mousemove", e => {
+        if (this.isModalDragging) onMove(e.clientX, e.clientY);
+      });
+      window.addEventListener("mouseup", onEnd);
+
+      targetEl.addEventListener("touchstart", e => {
+        if (e.touches && e.touches.length === 1) {
+          onStart(e.touches[0].clientX, e.touches[0].clientY);
+        }
+      }, { passive: true });
+      window.addEventListener("touchmove", e => {
+        if (this.isModalDragging && e.touches && e.touches.length === 1) {
+          onMove(e.touches[0].clientX, e.touches[0].clientY);
+        }
+      }, { passive: true });
+      window.addEventListener("touchend", onEnd);
+    }
+  }
+
+  redrawModal3D() {
+    if (!this.modalSignCanvas || !this.activeInspectedSign) return;
+    renderReferenceSkeleton(this.modalSignCanvas, this.activeInspectedSign, {
+      scale: 0.90,
+      lineWidth: 4,
+      tipRadius: 7,
+      jointRadius: 4.5,
+      glowBlur: 14,
+      yaw: this.modalYaw,
+      pitch: this.modalPitch
+    });
+  }
+
+  toggleModalAnimation() {
+    this.modalAnimActive = !this.modalAnimActive;
+    if (!this.btnModalAnimToggle) return;
+
+    if (this.modalAnimActive) {
+      this.btnModalAnimToggle.classList.add("active");
+      this.btnModalAnimToggle.textContent = "⏸ Pause";
+      this.modalAnimStartTime = performance.now();
+      this.startModalAnimLoop();
+    } else {
+      this.btnModalAnimToggle.classList.remove("active");
+      this.btnModalAnimToggle.textContent = "▶ Animate";
+      if (this.modalAnimReqId) cancelAnimationFrame(this.modalAnimReqId);
+      this.redrawModal3D();
+    }
+  }
+
+  startModalAnimLoop() {
+    if (!this.activeInspectedSign) return;
+    const targetLms = getCanonicalLandmarks(this.activeInspectedSign);
+    const neutralLms = getNeutralHandLandmarks();
+
+    const animStep = (timestamp) => {
+      if (!this.modalAnimActive || !this.inspectorModal || this.inspectorModal.style.display === "none") {
+        this.modalAnimActive = false;
+        if (this.btnModalAnimToggle) {
+          this.btnModalAnimToggle.classList.remove("active");
+          this.btnModalAnimToggle.textContent = "▶ Animate";
+        }
+        return;
+      }
+
+      const elapsed = timestamp - this.modalAnimStartTime;
+      const cycleTime = 2600; // 2.6s total loop
+      const cyclePos = elapsed % cycleTime;
+      const transTime = 1800; // 1.8s forming from neutral, 0.8s hold at target
+
+      let progress = 1.0;
+      if (cyclePos < transTime) {
+        const rawT = cyclePos / transTime;
+        // Smooth cubic ease-in-out
+        progress = rawT < 0.5 ? 4 * rawT * rawT * rawT : 1 - Math.pow(-2 * rawT + 2, 3) / 2;
+      }
+
+      const currentLms = interpolate3DLandmarks(neutralLms, targetLms, progress);
+
+      if (this.modalSignCanvas) {
+        renderReferenceSkeleton(this.modalSignCanvas, currentLms, {
+          signName: this.activeInspectedSign,
+          scale: 0.90,
+          lineWidth: 4,
+          tipRadius: 7,
+          jointRadius: 4.5,
+          glowBlur: 14,
+          yaw: this.modalYaw,
+          pitch: this.modalPitch
+        });
+      }
+
+      this.modalAnimReqId = requestAnimationFrame(animStep);
+    };
+
+    this.modalAnimReqId = requestAnimationFrame(animStep);
+  }
+
+  // ================= SIGN INSPECTOR MODAL =================
+  openInspectorModal(itemOrSign) {
+    if (!this.inspectorModal) return;
+
+    let sign = "";
+    let category = "Alphabet";
+    let description = "";
+    let tips = "";
+    let keypoints = null;
+
+    if (typeof itemOrSign === "string") {
+      sign = itemOrSign.toUpperCase().trim();
+      const fromDict = (this.dictionaryData || []).find(d => d.sign === sign);
+      const fromFallback = FALLBACK_SIGN_GUIDE[sign];
+
+      category = (fromDict && fromDict.category) || (fromFallback && fromFallback.category) || (sign.length === 1 ? "Alphabet" : "Phrase");
+      description = (fromDict && fromDict.description) || (fromFallback && fromFallback.description) || `Standard ASL sign formation for '${sign}'.`;
+      tips = (fromDict && fromDict.tips) || (fromFallback && fromFallback.tips) || "Practice steady hand placement in front of the camera.";
+      keypoints = fromFallback ? fromFallback.keypoints : null;
+    } else if (itemOrSign && typeof itemOrSign === "object") {
+      sign = (itemOrSign.sign || "").toUpperCase().trim();
+      const fromFallback = FALLBACK_SIGN_GUIDE[sign];
+      category = itemOrSign.category || (fromFallback && fromFallback.category) || "Alphabet";
+      description = itemOrSign.description || (fromFallback && fromFallback.description) || "";
+      tips = itemOrSign.tips || (fromFallback && fromFallback.tips) || "";
+      keypoints = fromFallback ? fromFallback.keypoints : null;
+    }
+
+    this.activeInspectedSign = sign;
+
+    if (this.modalSignTitle) {
+      this.modalSignTitle.textContent = sign.length === 1 ? `Letter '${sign}'` : `Sign: ${sign}`;
+    }
+    if (this.modalSignCategory) this.modalSignCategory.textContent = category;
+    if (this.modalSignDesc) this.modalSignDesc.textContent = description;
+    if (this.modalSignTips) this.modalSignTips.textContent = `💡 ${tips}`;
+
+    // Reset 3D view angles to front
+    this.modalYaw = 0.0;
+    this.modalPitch = 0.0;
+    if (this.modalViewPresetBtns) {
+      this.modalViewPresetBtns.forEach(b => {
+        b.classList.toggle("active", b.dataset.view === "front");
+      });
+    }
+
+    // Stop ongoing animation if active
+    if (this.modalAnimActive) {
+      this.modalAnimActive = false;
+      if (this.modalAnimReqId) cancelAnimationFrame(this.modalAnimReqId);
+    }
+    if (this.btnModalAnimToggle) {
+      this.btnModalAnimToggle.classList.remove("active");
+      this.btnModalAnimToggle.textContent = "▶ Animate";
+    }
+
+    // Render Color-Coded 5-Finger Keypoint Badges
+    if (this.modalKeypointsList) {
+      this.modalKeypointsList.innerHTML = "";
+      const defaultKeypoints = [
+        { finger: "Thumb", state: "Positioned per sign" },
+        { finger: "Index", state: "Positioned per sign" },
+        { finger: "Middle", state: "Positioned per sign" },
+        { finger: "Ring", state: "Positioned per sign" },
+        { finger: "Pinky", state: "Positioned per sign" }
+      ];
+      const kps = keypoints || (FALLBACK_SIGN_GUIDE[sign] && FALLBACK_SIGN_GUIDE[sign].keypoints) || defaultKeypoints;
+      const fingerColorMap = {
+        "Thumb": FINGER_COLORS.thumb,
+        "Index": FINGER_COLORS.index,
+        "Middle": FINGER_COLORS.middle,
+        "Ring": FINGER_COLORS.ring,
+        "Pinky": FINGER_COLORS.pinky
+      };
+
+      kps.forEach(kp => {
+        const color = fingerColorMap[kp.finger] || "#00f0ff";
+        const tag = document.createElement("span");
+        tag.className = "kpoint-tag";
+        tag.style.borderLeft = `3px solid ${color}`;
+        tag.innerHTML = `<strong style="color: ${color};">${kp.finger}:</strong> ${kp.state}`;
+        this.modalKeypointsList.appendChild(tag);
+      });
+    }
+
+    this.inspectorModal.style.display = "flex";
+    this.redrawModal3D();
   }
 
   closeInspectorModal() {
     if (this.inspectorModal) {
       this.inspectorModal.style.display = "none";
+    }
+    if (this.modalAnimActive) {
+      this.modalAnimActive = false;
+      if (this.modalAnimReqId) cancelAnimationFrame(this.modalAnimReqId);
+    }
+    if (this.btnModalAnimToggle) {
+      this.btnModalAnimToggle.classList.remove("active");
+      this.btnModalAnimToggle.textContent = "▶ Animate";
     }
   }
 
@@ -1437,6 +2422,13 @@ class UnmuteApp {
         const data = await res.json();
         this.dictionaryData = data.dictionary || [];
         this.renderDictionary(this.dictionaryData);
+        // If practice challenge is currently active, sync description from loaded dictionary
+        if (this.currentPracticeItem && this.practiceTargetDesc) {
+          const dictItem = this.dictionaryData.find(d => d.sign === this.currentPracticeItem);
+          if (dictItem) {
+            this.practiceTargetDesc.textContent = `${dictItem.description} (Tip: ${dictItem.tips})`;
+          }
+        }
       }
     } catch (e) {
       console.error(e);

@@ -365,6 +365,7 @@
             </div>
 
             <div class="challenge-actions">
+              <button class="secondary-btn" id="btn-view-practice-guide" title="Open Interactive 3D Model & Animated Formation Guide">📖 View 3D Guide & Tips</button>
               <button class="secondary-btn" id="btn-skip-challenge">Skip Sign</button>
               <button class="primary-btn glow-btn" id="btn-next-challenge">Next Challenge ➔</button>
             </div>
@@ -449,27 +450,27 @@
     </section>
 
 
-    <!-- ================= TAB 5: ASL GUIDE & DICTIONARY ================= -->
+    <!-- ================= TAB 5: ASL DICTIONARY ================= -->
     <section class="tab-content" id="dictionary-tab">
       <div class="dictionary-container glass-panel">
         <div class="dictionary-header">
           <div>
-            <h3>American Sign Language (ASL) Visual Guide</h3>
-            <p>Comprehensive visual reference for letters, numbers, and common dynamic gesture phrases.</p>
+            <h3>ASL Visual Sign Dictionary</h3>
+            <p>Interactive 3D anatomical reference and formation guide for all signs.</p>
           </div>
           <div class="dictionary-search-bar">
-            <input type="text" id="dict-search-input" placeholder="🔍 Search letter or word (e.g. 'Hello', 'A', 'Peace')..." class="search-input">
+            <input type="text" id="dict-search-input" placeholder="Search signs, letters, phrases..." class="text-input">
             <div class="filter-pills">
               <button class="filter-pill active" data-filter="all">All</button>
-              <button class="filter-pill" data-filter="Alphabet">A–Z Alphabet</button>
-              <button class="filter-pill" data-filter="Phrase">Phrases & Signs</button>
+              <button class="filter-pill" data-filter="Alphabet">Alphabet (A-Z)</button>
+              <button class="filter-pill" data-filter="Number">Numbers</button>
+              <button class="filter-pill" data-filter="Phrase">Phrases</button>
             </div>
           </div>
         </div>
 
-        <!-- Dictionary Cards Grid -->
         <div class="dict-grid" id="dict-grid">
-          <!-- Dynamically populated -->
+          <!-- Populated dynamically by JavaScript -->
         </div>
       </div>
     </section>
@@ -489,11 +490,38 @@
       </div>
       <div class="modal-body-grid">
         <div class="modal-visualizer-box">
-          <canvas id="modal-sign-canvas" width="280" height="280"></canvas>
+          <!-- 3D Perspective Controls -->
+          <div class="view-presets-bar">
+            <span class="preset-label">3D View:</span>
+            <button class="view-preset-btn active" data-view="front">Front</button>
+            <button class="view-preset-btn" data-view="side">Side</button>
+            <button class="view-preset-btn" data-view="top">Top</button>
+            <button class="view-preset-btn" data-view="isometric">3D Orbit</button>
+            <button class="view-preset-btn anim-btn" id="btn-modal-anim-toggle" title="Animate finger formation">▶ Animate</button>
+          </div>
+
+          <!-- Interactive 3D Canvas Viewport -->
+          <div class="canvas-3d-wrapper">
+            <canvas id="modal-sign-canvas" width="280" height="280"></canvas>
+            <div class="drag-hint-overlay">
+              <span class="drag-icon">🖱️</span> Drag to rotate 3D view
+            </div>
+          </div>
+
+          <!-- Color-Coded Finger Legend -->
+          <div class="finger-color-legend">
+            <span class="legend-chip"><span class="legend-dot" style="background: #ff9f1c;"></span>Thumb</span>
+            <span class="legend-chip"><span class="legend-dot" style="background: #00f0ff;"></span>Index</span>
+            <span class="legend-chip"><span class="legend-dot" style="background: #20bf6b;"></span>Middle</span>
+            <span class="legend-chip"><span class="legend-dot" style="background: #9b5de5;"></span>Ring</span>
+            <span class="legend-chip"><span class="legend-dot" style="background: #f72585;"></span>Pinky</span>
+          </div>
+
           <div class="modal-vis-tag">
-            <span class="pulse-dot"></span> Canonical ASL Handshape Reference
+            <span class="pulse-dot"></span> Interactive 3D Canonical Handshape Reference
           </div>
         </div>
+
         <div class="modal-info-box">
           <div class="modal-section">
             <h4 class="modal-section-title">🖐️ Anatomical Execution</h4>
@@ -504,13 +532,13 @@
             <p id="modal-sign-tips" class="modal-tips-text">Keep thumb vertical along the side of the fist.</p>
           </div>
           <div class="modal-section">
-            <h4 class="modal-section-title">🔍 Joint Keypoints</h4>
+            <h4 class="modal-section-title">🔍 Finger Pose Breakdown</h4>
             <div class="modal-keypoints-list" id="modal-keypoints-list">
-              <span class="kpoint-tag">Thumb: Extended</span>
-              <span class="kpoint-tag">Index: Curled</span>
-              <span class="kpoint-tag">Middle: Curled</span>
-              <span class="kpoint-tag">Ring: Curled</span>
-              <span class="kpoint-tag">Pinky: Curled</span>
+              <span class="kpoint-tag" style="border-left: 3px solid #ff9f1c;"><strong style="color: #ff9f1c;">Thumb:</strong> Extended</span>
+              <span class="kpoint-tag" style="border-left: 3px solid #00f0ff;"><strong style="color: #00f0ff;">Index:</strong> Curled</span>
+              <span class="kpoint-tag" style="border-left: 3px solid #20bf6b;"><strong style="color: #20bf6b;">Middle:</strong> Curled</span>
+              <span class="kpoint-tag" style="border-left: 3px solid #9b5de5;"><strong style="color: #9b5de5;">Ring:</strong> Curled</span>
+              <span class="kpoint-tag" style="border-left: 3px solid #f72585;"><strong style="color: #f72585;">Pinky:</strong> Curled</span>
             </div>
           </div>
         </div>
