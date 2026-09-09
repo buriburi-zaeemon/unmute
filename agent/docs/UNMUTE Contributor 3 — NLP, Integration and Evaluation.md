@@ -859,3 +859,38 @@ Before making changes:
 Do not rush directly to Week 8.
 
 Follow the timeline incrementally and coordinate with the other two contributors as their ML and dynamic-recognition components become available.
+
+---
+
+# CRITICAL INTEGRATION & MANDATORY ARCHITECTURE UPDATE (WEEK 3)
+
+## Architectural Alignment with Contributor 1 (ML Foundation, Static Engine & Interactive 3D Guide)
+
+To ensure smooth multimodal user experience, consistent evaluation benchmarking, and accurate frontend-backend integration, Contributor 1 has finalized the following architectural interfaces. Contributor 3 and their AI agents MUST incorporate these additions into testing, evaluation, and frontend response handlers:
+
+### 1. Universal Person-Invariant Recognition Engine
+- The static recognition engine in `sign_engine/asl_classifier.py` and dataset preparation pipeline in `ml/data/prepare_dataset.py` now implement **Self-Phalange Bone Length Normalization**:
+  $$\text{bone\_length} = \|\mathbf{p}_{\text{PIP}} - \mathbf{p}_{\text{MCP}}\| + \|\mathbf{p}_{\text{DIP}} - \mathbf{p}_{\text{PIP}}\| + \|\mathbf{p}_{\text{TIP}} - \mathbf{p}_{\text{DIP}}\|$$
+  $$\text{extension\_ratio} = \frac{\|\mathbf{p}_{\text{TIP}} - \mathbf{p}_{\text{MCP}}\|}{\text{bone\_length}}$$
+  Combined with proximal-to-distal phalanx collinearity vectors ($\mathbf{v}_{\text{prox}} \cdot \mathbf{v}_{\text{dist}} > 0.35$), this provides invariance across varying palm sizes, hand geometries, and finger proportions (tested across slender, broad, and child hands in `tests/test_sign_engine.py`).
+- **Evaluation Implication for Contributor 3**: When designing end-to-end evaluation protocols and measuring accuracy/robustness in `evaluation/system_metrics.py`, include signers with diverse hand proportions (broad palms, slender fingers) to demonstrate signer-independent invariance.
+
+### 2. High-Contrast 5-Finger Color System
+The visualizer and practice canvas have adopted a standardized color hierarchy for each finger:
+- 🟠 **Thumb**: `#ff9f1c` (Neon Amber / Gold)
+- 🔵 **Index**: `#00f0ff` (Electric Cyan)
+- 🟢 **Middle**: `#20bf6b` (Vivid Emerald Green)
+- 🟣 **Ring**: `#9b5de5` (Royal Purple)
+- 🔴 **Pinky**: `#f72585` (Hot Pink / Magenta)
+- ⚪ **Palm Base & Wrist**: `rgba(220, 235, 255, 0.65)` (Ice Silver)
+- When evaluating UI usability or designing new visual indicators, adhere strictly to these color standards.
+
+### 3. Interactive 3D Visualizer, Animated Guide & Instant Fallback Catalog
+- The web client (`static/app.js`, `static/index.html`, `static/styles.css`) now incorporates:
+  - **Interactive 3D Hand Model**: 360° mouse and touch drag orbit controls with view angle presets (`Front`, `Side`, `Top`, `Isometric`) using 3D perspective foreshortening.
+  - **Animated Sign Formation Guide**: Smoothly interpolates the hand skeleton from a neutral open resting pose to target sign formation (`▶ Animate` / `⏸ Pause`).
+  - **Practice Studio 3D Modal**: Dedicated "📖 View 3D Sign Guide & Tips" action button in the challenge card.
+  - **Instant Fallback Dictionary (`FALLBACK_SIGN_GUIDE`)**: Contains pre-rendered anatomical descriptions, tips, and color-coded keypoints for all 26 letters and phrases, ensuring the UI is never blank even before server responses arrive.
+- **Integration & NLP Implication for Contributor 3**:
+  - Sentence processor and NLP output tokens can trigger the inspector modal with recognized signs (`openInspectorModal(signName)`).
+  - Practice Studio evaluation metrics should record match accuracy against canonical reference landmarks rendered in the 3D model.

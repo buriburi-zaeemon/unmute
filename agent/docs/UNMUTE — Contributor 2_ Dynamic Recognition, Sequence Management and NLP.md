@@ -766,3 +766,39 @@ At the end of the project, provide a clear implementation report stating:
 - Model/checkpoint locations
 - How the backend contributor should integrate the dynamic model
 - How recognized sign sequences are passed into sentence formation
+
+---
+
+# CRITICAL INTEGRATION & MANDATORY ARCHITECTURE UPDATE (WEEK 3)
+
+## Architectural Alignment with Contributor 1 (ML Foundation & Static Recognition)
+
+To ensure full compatibility across the multimodal sign translation pipeline, Contributor 1 has finalized and deployed foundational upgrades to the static recognition engine and the client-side visual inspection system. Contributor 2 and their AI agents MUST adhere to these updated interfaces when designing dynamic sequence buffers, rolling feature windows, and NLP translation boundaries:
+
+### 1. Universal Person-Invariant Feature & Extension Extraction
+- **Self-Phalange Bone Length Normalization**:
+  The static classifier in `sign_engine/asl_classifier.py` and feature extraction pipeline in `sign_engine/feature_engineering.py` no longer depend on arbitrary palm-to-finger scaling ratios. Instead, each finger's straightness and extension ratio is normalized against its own cumulative bone length:
+  $$\text{bone\_length} = \|\mathbf{p}_{\text{PIP}} - \mathbf{p}_{\text{MCP}}\| + \|\mathbf{p}_{\text{DIP}} - \mathbf{p}_{\text{PIP}}\| + \|\mathbf{p}_{\text{TIP}} - \mathbf{p}_{\text{DIP}}\|$$
+  $$\text{extension\_ratio} = \frac{\|\mathbf{p}_{\text{TIP}} - \mathbf{p}_{\text{MCP}}\|}{\text{bone\_length}}$$
+- **Directional Phalanx Collinearity**:
+  To prevent false positives between curved/arched hands (`C`, `O`) and straight upright fingers (`U`, `V`, `B`, `R`, `L`), the proximal-to-distal phalanx vector dot product is used:
+  $$\frac{\mathbf{v}_{\text{prox}} \cdot \mathbf{v}_{\text{dist}}}{\|\mathbf{v}_{\text{prox}}\| \|\mathbf{v}_{\text{dist}}\|} > 0.35$$
+- **Dynamic Sequence Implication**: When Contributor 2 extracts delta motion vectors across rolling temporal windows ($T = 30$ frames), do NOT re-normalize keypoints against raw pixel dimensions. Always rely on invariant landmark-relative coordinates to preserve signer independence across varying hand sizes, palm-to-finger ratios, and camera distances.
+
+### 2. Standardized 5-Finger Color System
+All visualization layers (including dynamic gesture trajectory trails, attention heatmaps, and practice feedback) now utilize a standardized high-contrast 5-finger color palette:
+- 🟠 **Thumb**: `#ff9f1c` (Neon Amber / Gold)
+- 🔵 **Index**: `#00f0ff` (Electric Cyan)
+- 🟢 **Middle**: `#20bf6b` (Vivid Emerald Green)
+- 🟣 **Ring**: `#9b5de5` (Royal Purple)
+- 🔴 **Pinky**: `#f72585` (Hot Pink / Magenta)
+- ⚪ **Palm Base & Wrist**: `rgba(220, 235, 255, 0.65)` (Ice Silver)
+- Dynamic trajectory overlays created by Contributor 2 should use these matching fingertip colors when rendering historical motion paths for index, thumb, or wrist.
+
+### 3. Interactive 3D Hand Model & Animated Formation Guide Integration
+- The frontend (`static/app.js`, `static/index.html`) now features:
+  - `renderReferenceSkeleton(canvas, signNameOrLms, options)` with 3D yaw/pitch perspective projection and depth foreshortening.
+  - An interactive 3D inspector modal with 360° drag orbit and angle presets (`Front`, `Side`, `Top`, `Isometric`).
+  - An animated hand formation engine interpolating landmarks from neutral open hand to target handshape with Play/Pause controls.
+  - A comprehensive fallback guide catalog (`FALLBACK_SIGN_GUIDE`) providing immediate anatomical directions, memory tips, and color-coded keypoints for all 26 letters and core static/dynamic phrases.
+- **Sequence Buffer & NLP Alignment**: When the sequence buffer outputs multi-sign phrases or compound glosses (e.g. `["HELLO", "THANK YOU"]`), the UI inspector can receive and render canonical 3D guidance for each recognized segment.
