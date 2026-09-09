@@ -13,15 +13,22 @@ A real-time bilingual **American Sign Language (ASL)** and **Indian Sign Languag
 2. **Dual Input Translation**:
    - **Live Webcam Translation**: Ultra-low-latency real-time video stream over WebSocket with glowing HUD landmark skeleton overlay, letter accumulator, sentence composer, and Text-To-Speech (TTS).
    - **Video File Translation**: Upload pre-recorded sign videos (MP4, WebM, MOV, AVI) for automated frame-by-frame analysis, timestamped interactive transcripts, synchronized subtitle playback, and `.srt`/`.vtt`/`.json`/`.txt` export.
-3. **Sign Visualizer & Guide Quality Overhaul**:
-   - 🖐️ **Interactive Visualizer**: Live guide previews with glowing neon 21-landmark hand skeleton and high-resolution anatomical breakdowns.
-   - 🎯 **Gamified Practice Studio**: Real-time hand pose matching bar with score tracking and holding verification timer.
+3. **Universal Person-Invariant Recognition Engine**:
+   - 📐 **Self-Phalange Bone Ratio Normalization**: Each finger's straightness and extension ratio is computed relative to its own cumulative phalange bone chain ($\text{extension} = \|\mathbf{p}_{\text{TIP}} - \mathbf{p}_{\text{MCP}}\| / \sum \text{phalange segments}$), replacing fragile palm-to-finger assumptions.
+   - 🧬 **Directional Phalanx Collinearity**: Vector alignment check ($\mathbf{v}_{\text{prox}} \cdot \mathbf{v}_{\text{dist}} > 0.35$) cleanly disambiguates straight upright fingers (`U`, `V`, `B`, `R`, `L`) from curved arc fingers (`C`, `O`).
+   - 🖐️ **Universal Hand Proportion Invariance**: Validated across diverse hand geometries—slender long fingers, broad palms with short fingers, and child hands.
+4. **Interactive 3D Visualizer & Animated Sign Guide**:
+   - 🌐 **Interactive 3D Hand Model**: Full 360° mouse/touch drag orbit controls with 3D perspective foreshortening and angle preset buttons (`Front`, `Side`, `Top`, `Isometric`).
+   - 🎬 **Animated Finger Formation**: Smooth cubic-eased dynamic animation demonstrating how fingers transition from a neutral open hand into the target sign shape with `▶ Animate` / `⏸ Pause` controls.
+   - 🎨 **High-Contrast 5-Finger Color System**: Distinct neon colors for every finger (Thumb: Gold `#ff9f1c`, Index: Cyan `#00f0ff`, Middle: Green `#20bf6b`, Ring: Purple `#9b5de5`, Pinky: Hot Pink `#f72585`, Palm: Ice Silver) across all 3D visualizers and HUD overlays.
+   - 📖 **Instant Fallback Dictionary Catalog**: Pre-rendered anatomical instructions, memory tips, and color-coded keypoints for all 26 letters, numbers, and phrases so Practice Studio and Inspector never show blank/generic text.
+   - 🎯 **Gamified Practice Studio**: Real-time hand pose matching bar with score tracking, holding verification timer, and a dedicated "📖 View 3D Sign Guide & Tips" modal inspector button.
    - ⚡ **Ultra-Low Latency Pipeline**: Binary WebSocket transfer with ping-pong flow control and non-blocking worker threads achieving **~13.5ms round-trip response (74+ FPS)**.
-4. **Modern Dual-Theme UI**:
+5. **Modern Dual-Theme UI**:
    - Clean, sky-blue **Light Mode** by default, with a complementary **Dark Mode** toggle, persisting via localStorage.
-5. **Custom Gesture Recorder & Trainer**:
+6. **Custom Gesture Recorder & Trainer**:
    - Capture live samples of novel signs directly through the browser and train lightweight custom models in real-time.
-6. **Bilingual Visual Dictionary**:
+7. **Bilingual Visual Dictionary**:
    - Comprehensive searchable reference library of ASL and ISL handshapes, fingerspelling cards, and gesture explanations.
 
 ---

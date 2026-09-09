@@ -11,7 +11,14 @@ package "Frontend Web Application (Browser Client)" {
   component "Sign Language Mode Switcher (ASL/ISL)" as LangSelector <<Component>>
   component "Video Upload & Subtitle Player" as UploadMod <<Component>>
   component "Interactive Practice Studio" as PracticeMod <<Component>>
-  component "Sign Visualizer & Skeleton Guide" as VisualizerEng <<Engine>>
+  component "3D Hand Visualizer, Animated Guide & Color Engine (app.js)" as VisualizerEng <<Engine>>
+  note bottom of VisualizerEng
+    Visualizer & Guide:
+    - 360° 3D Orbit Drag & Perspective Presets
+    - Cubic Eased Animated Finger Formation
+    - High-Contrast 5-Finger Color System
+    - Instant Fallback Anatomical Catalog
+  end note
   component "Custom Gesture Studio" as CustomMod <<Component>>
   component "Bilingual Visual Dictionary (ASL/ISL)" as DictMod <<Component>>
   component "Sentence Composer & Accumulator" as SentenceComp <<Component>>
@@ -52,9 +59,10 @@ package "Sign Recognition Core Engine (sign_engine/)" {
   component "Hybrid Static Classifier (asl_classifier.py)" as ASLClass <<Classifier>>
   note bottom of ASLClass
     Static Engine:
-    - Anatomical Rule Heuristics
-    - 3-Frame Stability Deque
-    - Legacy RF Baseline Fallback
+    - Self-Phalange Bone Ratio Normalization
+    - Directional Phalanx Collinearity
+    - Universal Hand Proportion Invariance
+    - 3-Frame Stability Deque & Calibrated Aliases
   end note
 
   component "Dynamic Temporal Gesture Tracker (temporal_tracker.py)" as TempTracker <<Tracker>>
@@ -164,6 +172,7 @@ PracticeMod -[#00ACC1]-> RESTFrame : Sends Single Camera Frame for Practice Veri
 PracticeMod -[#43A047]-> VisualizerEng : Renders Anatomical Target Handshape & Scoring
 DictMod -[#3949AB]-> DictAPI : Requests ASL & ISL Vocabulary Data
 DictMod -[#8E24AA]-> VisualizerEng : Renders Mini Card Skeletons & Modal Inspector
+VisualizerEng -[#1DE9B6]-> CanvasHUD : Renders Color-Coded Skeleton & 3D Visuals
 
 CustomMod -[#00897B]-> CustomAPI : Submits Recorded Landmark Vector Samples
 CustomMod -[#00796B]-> CustomAPI : Fetches List of Registered Gestures
