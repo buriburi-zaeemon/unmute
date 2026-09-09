@@ -33,7 +33,7 @@ package "Frontend Web Application (Browser Client)" {
 ' Backend Layer (FastAPI Core)
 ' ==========================================================
 package "FastAPI Backend Layer (backend/main.py)" {
-  component "FastAPI Main Application" as AppMain <<Server>>
+  component "FastAPI Main Application (run.py - Port 8505)" as AppMain <<Server>>
   component "System Health API (/api/status)" as RESTStatus <<Controller>>
   component "Real-Time WebSocket Feed (/ws/live-stream)" as WSFeed <<WebSocket>>
   component "Single-Frame Predict API (/api/predict-frame)" as RESTFrame <<Controller>>
@@ -152,6 +152,8 @@ package "File Storage & Project Assets" {
     [index.html]
     [app.js]
     [styles.css]
+    [three.min.js]
+    [OrbitControls.js]
   }
 }
 

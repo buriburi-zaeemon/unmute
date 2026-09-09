@@ -894,3 +894,15 @@ The visualizer and practice canvas have adopted a standardized color hierarchy f
 - **Integration & NLP Implication for Contributor 3**:
   - Sentence processor and NLP output tokens can trigger the inspector modal with recognized signs (`openInspectorModal(signName)`).
   - Practice Studio evaluation metrics should record match accuracy against canonical reference landmarks rendered in the 3D model.
+
+### 4. Three.js WebGL Volumetric 3D Engine & OrbitControls Upgrade
+- **Full WebGL 3D Integration**: The client-side visualizer has been upgraded to a true Three.js WebGL engine using locally-staged static/three.min.js (Three.js r128) and static/OrbitControls.js.
+- **Volumetric 3D Geometry**: Hands are rendered with 21 lit joint spheres, metallic bone cylinders rotated with quaternions along parent-child vectors, and a translucent cybernetic palm plate spanning wrist and knuckles.
+- **Interactive OrbitControls**: Signers can freely orbit in 360 degrees, zoom in/out with mouse-wheel (1.0x to 5.5x), pan, or snap to camera view presets (Front, Side, Top, Isometric).
+- **Cubic-Eased Dynamic Formation Animation**: Real-time sinusoidal cubic easing interpolates landmarks between a neutral resting hand and the target sign shape with Play Guide / Pause Guide toggles.
+- **Viewport Availability**: Embedded into the 3D Sign Inspector Modal (#modal-sign-canvas), Practice Studio Challenge Card (#practice-target-canvas), and Live Camera Reference Widget (#camera-ref-canvas).
+
+### 5. Dedicated Hardcoded Port 8505 Configuration
+- **Port Conflict Prevention**: To prevent clashes with standard ports (8080, 8000, 3000) used by other local development servers and proxies, UNMUTE now hardcodes and defaults to port **8505** in 
+un.py and stop.py.
+- **Integration & Evaluation Requirement**: All automated test suites, end-to-end evaluation harnesses (valuation/system_metrics.py), WebSocket integration tests, and benchmark scripts must target port **8505** (http://localhost:8505).

@@ -802,3 +802,15 @@ All visualization layers (including dynamic gesture trajectory trails, attention
   - An animated hand formation engine interpolating landmarks from neutral open hand to target handshape with Play/Pause controls.
   - A comprehensive fallback guide catalog (`FALLBACK_SIGN_GUIDE`) providing immediate anatomical directions, memory tips, and color-coded keypoints for all 26 letters and core static/dynamic phrases.
 - **Sequence Buffer & NLP Alignment**: When the sequence buffer outputs multi-sign phrases or compound glosses (e.g. `["HELLO", "THANK YOU"]`), the UI inspector can receive and render canonical 3D guidance for each recognized segment.
+
+### 4. Three.js WebGL Volumetric 3D Engine & OrbitControls Upgrade
+- **Full WebGL 3D Integration**: The client-side visualizer has been upgraded to a true Three.js WebGL engine using locally-staged static/three.min.js (Three.js r128) and static/OrbitControls.js.
+- **Volumetric 3D Geometry**: Hands are rendered with 21 lit joint spheres, metallic bone cylinders rotated with quaternions along parent-child vectors, and a translucent cybernetic palm plate spanning wrist and knuckles.
+- **Interactive OrbitControls**: Signers can freely orbit in 360 degrees, zoom in/out with mouse-wheel (1.0x to 5.5x), pan, or snap to camera view presets (Front, Side, Top, Isometric).
+- **Cubic-Eased Dynamic Formation Animation**: Real-time sinusoidal cubic easing interpolates landmarks between a neutral resting hand and the target sign shape with Play Guide / Pause Guide toggles.
+- **Viewport Availability**: Embedded into the 3D Sign Inspector Modal (#modal-sign-canvas), Practice Studio Challenge Card (#practice-target-canvas), and Live Camera Reference Widget (#camera-ref-canvas).
+
+### 5. Dedicated Hardcoded Port 8505 Configuration
+- **Port Conflict Prevention**: To prevent clashes with standard ports (8080, 8000, 3000) used by other local development servers and proxies, UNMUTE now hardcodes and defaults to port **8505** in 
+un.py and stop.py.
+- **Integration Requirement**: All WebSocket connections (ws://127.0.0.1:8505/ws/...), REST API calls, and integration test suites should target port **8505** (http://localhost:8505).
