@@ -156,6 +156,10 @@ unmute/
 │   │   ├── labels.py         # Canonical class definitions for ASL (41) and ISL (44)
 │   │   ├── prepare_dataset.py# Feature extraction & stratified zero-leakage 70/15/15 splitting
 │   │   └── dataset.py        # PyTorch StaticSignDataset and get_dataloaders() factory
+│   ├── models/               # PyTorch neural network architectures
+│   │   └── static_mlp.py     # StaticASL_MLP (109 dims) and StaticISL_MLP (228 dims)
+│   ├── training/             # Training, validation & evaluation pipelines
+│   │   └── train_static.py   # Modular PyTorch training CLI with checkpointing
 │   ├── legacy_rf_audit.py    # Audit suite for legacy Random Forest model
 │   └── dataset_recommendation.md # Dataset strategy and anatomical sign catalogs
 ├── static/                   # Frontend single-page application
@@ -163,11 +167,14 @@ unmute/
 │   ├── app.js                # WebSocket streaming, Canvas HUD, and UI controller
 │   └── styles.css            # Responsive styling, light/dark theme variables
 ├── models/                   # Serialized machine learning models and baselines
-│   └── asl_rf_model.joblib   # Legacy Random Forest baseline model (109 features)
+│   ├── asl_rf_model.joblib   # Legacy Random Forest baseline model (109 features)
+│   ├── asl_static_mlp.pt     # Trained PyTorch ASL Static MLP checkpoint
+│   └── isl_static_mlp.pt     # Trained PyTorch ISL Static MLP checkpoint
 ├── tests/                    # Automated pytest test suite
 │   ├── test_backend.py       # REST and WebSocket endpoint integration tests
 │   ├── test_sign_engine.py   # Landmark, feature engineering, and classifier tests
-│   └── test_ml_data.py       # Label mappings, dual features, zero-leakage splits tests
+│   ├── test_ml_data.py       # Label mappings, dual features, zero-leakage splits tests
+│   └── test_static_mlp.py    # PyTorch Static MLP architectures and training tests
 ├── agent/                    # Contributor documentation, master plans, and audit reports
 │   └── docs/                 # Contributor prompts, weekly roadmaps, and audit files
 ├── architecture.puml         # Authoritative PlantUML system architecture diagram
@@ -180,8 +187,8 @@ unmute/
 ## 🧠 Machine Learning Foundation (Contributor 1)
 
 UNMUTE supports a Dual-Language Static Recognition Engine for both **American Sign Language (ASL)** and **Indian Sign Language (ISL)**:
-- **ASL Pipeline**: 21 single-hand MediaPipe landmarks $\rightarrow$ 109-dimensional rotation- and scale-invariant geometric feature vector $\rightarrow$ 41 static classes.
-- **ISL Pipeline**: 42 bimanual MediaPipe landmarks (Primary Hand 109 + Secondary Hand 109 + 10 Inter-hand spatial/contact metrics) $\rightarrow$ 228-dimensional feature vector $\rightarrow$ 44 static classes aligned with ISLRTC standards.
+- **ASL Pipeline**: 21 single-hand MediaPipe landmarks $\rightarrow$ 109-dimensional rotation- and scale-invariant geometric feature vector $\rightarrow$ `StaticASL_MLP` $\rightarrow$ 41 static classes.
+- **ISL Pipeline**: 42 bimanual MediaPipe landmarks (Primary Hand 109 + Secondary Hand 109 + 10 Inter-hand spatial/contact metrics) $\rightarrow$ 228-dimensional feature vector $\rightarrow$ `StaticISL_MLP` $\rightarrow$ 44 static classes aligned with ISLRTC standards.
 
 ### Audit Legacy Baseline Model
 To verify compatibility and profile the legacy comparative baseline model:
@@ -197,6 +204,16 @@ python ml/data/prepare_dataset.py --language ASL --output-dir data
 
 # ISL Dataset Pipeline (228-dim features, 44 classes)
 python ml/data/prepare_dataset.py --language ISL --output-dir data
+```
+
+### Train Static Recognition Models
+To train the PyTorch Multi-Layer Perceptrons with learning rate scheduling and best validation checkpointing:
+```bash
+# Train Static ASL MLP (saves models/asl_static_mlp.pt)
+python -m ml.training.train_static --language ASL --epochs 25 --batch-size 32
+
+# Train Static ISL MLP (saves models/isl_static_mlp.pt)
+python -m ml.training.train_static --language ISL --epochs 25 --batch-size 32
 ```
 
 ---
