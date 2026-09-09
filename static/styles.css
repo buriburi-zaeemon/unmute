@@ -1513,6 +1513,131 @@ body {
   50% { opacity: 0.4; transform: scale(0.75); }
 }
 
+/* ================= Practice In-Card 3D Visualizer ================= */
+.practice-3d-presets-bar {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 6px;
+  justify-content: center;
+  width: 100%;
+}
+
+.practice-3d-presets-bar .view-preset-btn {
+  padding: 2px 6px;
+  font-size: 0.68rem;
+}
+
+.practice-canvas-wrapper {
+  position: relative;
+  width: 150px;
+  height: 150px;
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.practice-canvas-wrapper:active {
+  cursor: grabbing;
+}
+
+#practice-target-canvas {
+  width: 150px;
+  height: 150px;
+}
+
+.drag-hint-overlay.mini {
+  font-size: 0.62rem;
+  padding: 2px 6px;
+  bottom: 4px;
+}
+
+/* ================= Live Camera Tab 3D Sign Reference ================= */
+.live-3d-guide-box {
+  background: rgba(4, 8, 20, 0.65);
+  border: 1px solid rgba(0, 240, 255, 0.25);
+  border-radius: var(--radius-md);
+  padding: 12px;
+  margin-bottom: 16px;
+  box-shadow: 0 4px 18px rgba(0, 240, 255, 0.1);
+}
+
+.sign-select-mini {
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(0, 240, 255, 0.3);
+  color: var(--accent-cyan);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  outline: none;
+}
+
+.live-3d-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.live-3d-canvas-wrap {
+  position: relative;
+  width: 130px;
+  height: 130px;
+  background: radial-gradient(circle at center, rgba(0, 240, 255, 0.12) 0%, rgba(5, 8, 18, 0.95) 80%);
+  border: 1px solid rgba(0, 240, 255, 0.3);
+  border-radius: var(--radius-sm);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+  flex-shrink: 0;
+}
+
+.live-3d-canvas-wrap:active {
+  cursor: grabbing;
+}
+
+#camera-ref-canvas {
+  width: 130px;
+  height: 130px;
+}
+
+.live-3d-details {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.live-3d-sign-title {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--accent-cyan);
+}
+
+.live-3d-sign-desc {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  line-height: 1.35;
+  margin: 0;
+}
+
+.finger-legend-compact {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  margin-top: 4px;
+}
+
+.finger-legend-compact .legend-chip {
+  font-size: 0.65rem;
+}
+
 /* ================= Sign Inspector Modal ================= */
 .modal-overlay {
   position: fixed;

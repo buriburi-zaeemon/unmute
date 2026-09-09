@@ -1151,7 +1151,10 @@ class UnmuteApp {
     this.modalKeypointsList = document.getElementById("modal-keypoints-list");
     this.activeInspectedSign = null;
 
-    // 3D Perspective & Animated Guide State
+    // Header Quick 3D Guide Button
+    this.btnHeader3DGuide = document.getElementById("btn-header-3d-guide");
+
+    // Modal 3D Perspective & Animated Guide State
     this.modalYaw = 0.0;
     this.modalPitch = 0.0;
     this.isModalDragging = false;
@@ -1160,6 +1163,33 @@ class UnmuteApp {
     this.modalAnimActive = false;
     this.modalAnimStartTime = 0;
     this.modalAnimReqId = null;
+
+    // Practice Studio In-Card 3D State
+    this.practiceYaw = 0.50;
+    this.practicePitch = 0.28;
+    this.isPracticeDragging = false;
+    this.practiceDragLastX = 0;
+    this.practiceDragLastY = 0;
+    this.practiceAnimActive = false;
+    this.practiceAnimStartTime = 0;
+    this.practiceAnimReqId = null;
+    this.btnPracticeAnimToggle = document.getElementById("btn-practice-anim-toggle");
+    this.practiceViewPresetBtns = document.querySelectorAll(".view-preset-btn[data-pview]");
+    this.practiceCanvasWrapper = document.getElementById("practice-canvas-wrapper");
+
+    // Live Camera Tab 3D Reference State
+    this.cameraRefCanvas = document.getElementById("camera-ref-canvas");
+    this.cameraRefCanvasWrap = document.getElementById("camera-ref-canvas-wrap");
+    this.cameraGuideSignSelect = document.getElementById("camera-guide-sign-select");
+    this.btnCameraOpenModal = document.getElementById("btn-camera-open-modal");
+    this.cameraRefSignTitle = document.getElementById("camera-ref-sign-title");
+    this.cameraRefSignDesc = document.getElementById("camera-ref-sign-desc");
+    this.cameraRefYaw = 0.45;
+    this.cameraRefPitch = 0.25;
+    this.isCameraRefDragging = false;
+    this.cameraRefDragLastX = 0;
+    this.cameraRefDragLastY = 0;
+    this.activeCameraRefSign = "A";
 
     // Custom Trainer
     this.customGestureName = document.getElementById("custom-gesture-name");
@@ -1274,8 +1304,17 @@ class UnmuteApp {
       });
     }
 
-    // Initialize 3D Orbit Drag and Animation Controls
+    // Initialize 3D Orbit Drag and Animation Controls (Modal, Practice In-Card, and Live Camera)
     this.initModal3DControls();
+    this.initPracticeInCard3D();
+    this.initCameraRef3D();
+
+    if (this.btnHeader3DGuide) {
+      this.btnHeader3DGuide.addEventListener("click", () => {
+        const signToInspect = this.activeCameraRefSign || this.currentPracticeItem || "A";
+        this.openInspectorModal(signToInspect);
+      });
+    }
 
     this.btnStartRecord.addEventListener("click", () => this.startCustomRecording());
     this.btnTrainCustom.addEventListener("click", () => this.saveCustomGesture());
@@ -1485,6 +1524,14 @@ class UnmuteApp {
 
       this.activeLetterBadge.textContent = sign;
       this.activeLetterConf.textContent = `${Math.round(conf * 100)}%`;
+
+      // Auto-update Live 3D Sign Reference Guide if in AUTO mode
+      if (this.cameraGuideSignSelect && this.cameraGuideSignSelect.value === "AUTO") {
+        if (this.activeCameraRefSign !== sign) {
+          this.activeCameraRefSign = sign;
+          this.renderCameraRef3D();
+        }
+      }
 
       if (data.top_predictions && data.top_predictions.length > 0) {
         this.renderConfidenceList(data.top_predictions);
@@ -1828,10 +1875,8 @@ class UnmuteApp {
     if (this.practiceMatchBar) this.practiceMatchBar.style.width = "0%";
     if (this.practiceFeedbackBanner) this.practiceFeedbackBanner.textContent = `Form sign '${targetSign}' in camera view`;
 
-    // Render Canonical Reference Skeleton on Target Canvas
-    if (this.practiceTargetCanvas) {
-      renderReferenceSkeleton(this.practiceTargetCanvas, targetSign, { scale: 0.85 });
-    }
+    // Render Canonical Reference Skeleton on Target Canvas in 3D Perspective
+    this.renderPractice3D();
   }
 
   nextPracticeChallenge() {
@@ -2011,6 +2056,242 @@ class UnmuteApp {
       ctx.fill();
     }
   }
+
+  // ================= PRACTICE IN-CARD 3D INTERACTIVE CONTROLS =================
+  renderPractice3D(overrideLms = null) {
+    if (!this.practiceTargetCanvas) return;
+    const sign = this.currentPracticeItem || "A";
+
+    renderReferenceSkeleton(this.practiceTargetCanvas, overrideLms || sign, {
+      signName: sign,
+      scale: 0.88,
+      lineWidth: 3.5,
+      tipRadius: 6,
+      jointRadius: 4,
+      glowBlur: 12,
+      yaw: this.practiceYaw,
+      pitch: this.practicePitch
+    });
+  }
+
+  initPracticeInCard3D() {
+    // Presets bar in Practice Studio
+    if (this.practiceViewPresetBtns) {
+      this.practiceViewPresetBtns.forEach(btn => {
+        btn.addEventListener("click", () => {
+          this.practiceViewPresetBtns.forEach(b => b.classList.remove("active"));
+          btn.classList.add("active");
+          const view = btn.dataset.pview;
+          if (view === "isometric") {
+            this.practiceYaw = 0.50;
+            this.practicePitch = 0.28;
+          } else if (view === "front") {
+            this.practiceYaw = 0.0;
+            this.practicePitch = 0.0;
+          } else if (view === "side") {
+            this.practiceYaw = 1.35;
+            this.practicePitch = 0.10;
+          }
+          this.renderPractice3D();
+        });
+      });
+    }
+
+    // In-card animation toggle
+    if (this.btnPracticeAnimToggle) {
+      this.btnPracticeAnimToggle.addEventListener("click", () => this.togglePracticeAnimation());
+    }
+
+    // Drag to orbit 3D model directly on practice card
+    const targetEl = this.practiceCanvasWrapper || this.practiceTargetCanvas;
+    if (targetEl) {
+      let isDragging = false;
+      let startX = 0, startY = 0;
+
+      const onStart = (cx, cy) => {
+        isDragging = true;
+        startX = cx;
+        startY = cy;
+      };
+
+      const onMove = (cx, cy) => {
+        if (!isDragging) return;
+        const dx = cx - startX;
+        const dy = cy - startY;
+        startX = cx;
+        startY = cy;
+
+        this.practiceYaw += dx * 0.012;
+        this.practicePitch = Math.max(-1.45, Math.min(1.45, this.practicePitch + dy * 0.012));
+
+        if (this.practiceViewPresetBtns) {
+          this.practiceViewPresetBtns.forEach(b => b.classList.remove("active"));
+        }
+        this.renderPractice3D();
+      };
+
+      const onEnd = () => { isDragging = false; };
+
+      targetEl.addEventListener("mousedown", e => {
+        e.preventDefault();
+        onStart(e.clientX, e.clientY);
+      });
+      window.addEventListener("mousemove", e => {
+        if (isDragging) onMove(e.clientX, e.clientY);
+      });
+      window.addEventListener("mouseup", onEnd);
+
+      targetEl.addEventListener("touchstart", e => {
+        if (e.touches && e.touches.length === 1) onStart(e.touches[0].clientX, e.touches[0].clientY);
+      }, { passive: true });
+      window.addEventListener("touchmove", e => {
+        if (isDragging && e.touches && e.touches.length === 1) onMove(e.touches[0].clientX, e.touches[0].clientY);
+      }, { passive: true });
+      window.addEventListener("touchend", onEnd);
+    }
+  }
+
+  togglePracticeAnimation() {
+    this.practiceAnimActive = !this.practiceAnimActive;
+    if (!this.btnPracticeAnimToggle) return;
+
+    if (this.practiceAnimActive) {
+      this.btnPracticeAnimToggle.classList.add("active");
+      this.btnPracticeAnimToggle.textContent = "⏸ Pause";
+      this.practiceAnimStartTime = performance.now();
+      this.startPracticeAnimLoop();
+    } else {
+      this.btnPracticeAnimToggle.classList.remove("active");
+      this.btnPracticeAnimToggle.textContent = "▶ Animate";
+      if (this.practiceAnimReqId) cancelAnimationFrame(this.practiceAnimReqId);
+      this.renderPractice3D();
+    }
+  }
+
+  startPracticeAnimLoop() {
+    const targetSign = this.currentPracticeItem || "A";
+    const targetLms = getCanonicalLandmarks(targetSign);
+    const neutralLms = getNeutralHandLandmarks();
+
+    const animStep = (timestamp) => {
+      if (!this.practiceAnimActive || this.activeTab !== "practice-tab") {
+        this.practiceAnimActive = false;
+        if (this.btnPracticeAnimToggle) {
+          this.btnPracticeAnimToggle.classList.remove("active");
+          this.btnPracticeAnimToggle.textContent = "▶ Animate";
+        }
+        return;
+      }
+
+      const elapsed = timestamp - this.practiceAnimStartTime;
+      const cycleTime = 2600;
+      const cyclePos = elapsed % cycleTime;
+      const transTime = 1800;
+
+      let progress = 1.0;
+      if (cyclePos < transTime) {
+        const rawT = cyclePos / transTime;
+        progress = rawT < 0.5 ? 4 * rawT * rawT * rawT : 1 - Math.pow(-2 * rawT + 2, 3) / 2;
+      }
+
+      const currentLms = interpolate3DLandmarks(neutralLms, targetLms, progress);
+      this.renderPractice3D(currentLms);
+
+      this.practiceAnimReqId = requestAnimationFrame(animStep);
+    };
+
+    this.practiceAnimReqId = requestAnimationFrame(animStep);
+  }
+
+  // ================= LIVE CAMERA TAB 3D REFERENCE WIDGET =================
+  renderCameraRef3D() {
+    if (!this.cameraRefCanvas) return;
+    const sign = this.activeCameraRefSign || "A";
+
+    renderReferenceSkeleton(this.cameraRefCanvas, sign, {
+      scale: 0.86,
+      lineWidth: 3.2,
+      tipRadius: 5.5,
+      jointRadius: 3.5,
+      glowBlur: 10,
+      yaw: this.cameraRefYaw,
+      pitch: this.cameraRefPitch
+    });
+
+    if (this.cameraRefSignTitle) {
+      this.cameraRefSignTitle.textContent = sign.length === 1 ? `Letter '${sign}'` : `Sign: ${sign}`;
+    }
+    if (this.cameraRefSignDesc) {
+      const guide = FALLBACK_SIGN_GUIDE[sign];
+      this.cameraRefSignDesc.textContent = guide ? guide.description : `Canonical 3D posture for '${sign}'.`;
+    }
+  }
+
+  initCameraRef3D() {
+    if (this.cameraGuideSignSelect) {
+      this.cameraGuideSignSelect.addEventListener("change", (e) => {
+        const val = e.target.value;
+        if (val !== "AUTO") {
+          this.activeCameraRefSign = val;
+          this.renderCameraRef3D();
+        }
+      });
+    }
+
+    if (this.btnCameraOpenModal) {
+      this.btnCameraOpenModal.addEventListener("click", () => {
+        this.openInspectorModal(this.activeCameraRefSign || "A");
+      });
+    }
+
+    const wrap = this.cameraRefCanvasWrap || this.cameraRefCanvas;
+    if (wrap) {
+      let isDragging = false;
+      let startX = 0, startY = 0;
+
+      wrap.addEventListener("mousedown", (e) => {
+        e.preventDefault();
+        isDragging = true;
+        startX = e.clientX;
+        startY = e.clientY;
+      });
+      window.addEventListener("mousemove", (e) => {
+        if (!isDragging) return;
+        const dx = e.clientX - startX;
+        const dy = e.clientY - startY;
+        startX = e.clientX;
+        startY = e.clientY;
+        this.cameraRefYaw += dx * 0.012;
+        this.cameraRefPitch = Math.max(-1.45, Math.min(1.45, this.cameraRefPitch + dy * 0.012));
+        this.renderCameraRef3D();
+      });
+      window.addEventListener("mouseup", () => { isDragging = false; });
+
+      wrap.addEventListener("touchstart", (e) => {
+        if (e.touches && e.touches.length === 1) {
+          isDragging = true;
+          startX = e.touches[0].clientX;
+          startY = e.touches[0].clientY;
+        }
+      }, { passive: true });
+      window.addEventListener("touchmove", (e) => {
+        if (isDragging && e.touches && e.touches.length === 1) {
+          const dx = e.touches[0].clientX - startX;
+          const dy = e.touches[0].clientY - startY;
+          startX = e.touches[0].clientX;
+          startY = e.touches[0].clientY;
+          this.cameraRefYaw += dx * 0.012;
+          this.cameraRefPitch = Math.max(-1.45, Math.min(1.45, this.cameraRefPitch + dy * 0.012));
+          this.renderCameraRef3D();
+        }
+      }, { passive: true });
+      window.addEventListener("touchend", () => { isDragging = false; });
+    }
+
+    // Initial render of camera reference widget
+    this.renderCameraRef3D();
+  }
+
 
   // ================= 3D INTERACTIVE CONTROLS & ANIMATION =================
   initModal3DControls() {
@@ -2458,7 +2739,7 @@ class UnmuteApp {
 
       this.dictGrid.appendChild(card);
 
-      // Render the canonical skeleton on the card's canvas
+      // Render the canonical 3D skeleton on the card's canvas with perspective angle
       const canvasEl = card.querySelector(".dict-visualizer-canvas");
       if (canvasEl) {
         renderReferenceSkeleton(canvasEl, item.sign, {
@@ -2466,7 +2747,9 @@ class UnmuteApp {
           lineWidth: 2.5,
           tipRadius: 4.5,
           jointRadius: 3,
-          glowBlur: 6
+          glowBlur: 6,
+          yaw: 0.35,
+          pitch: 0.18
         });
       }
     });
