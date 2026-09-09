@@ -71,7 +71,8 @@ class ASLClassifier:
             proj_tip = np.dot(pts[tip_i] - pts[0], v_hand_unit)
             proj_pip = np.dot(pts[pip_i] - pts[0], v_hand_unit)
             y_check = pts[tip_i][1] < pts[pip_i][1] + 0.05
-            return (d_tip > d_pip * 1.05) and (proj_tip > proj_pip) and y_check
+            straight_check = np.linalg.norm(pts[tip_i] - pts[mcp_i]) > 1.15 * palm_size
+            return (d_tip > d_pip * 1.05) and (proj_tip > proj_pip) and y_check and straight_check
 
         index_up = is_finger_up(8, 7, 6, 5)
         middle_up = is_finger_up(12, 11, 10, 9)
@@ -124,180 +125,201 @@ class ASLClassifier:
         # 3. ANATOMICAL PATTERN MATCHING RULES (A-Z & STATIC PHRASES)
         # -------------------------------------------------------------
 
-        # === 3A. 'P' & 'K' FAMILY (Index extended, Middle angled/down, Thumb at middle joint) ===
-        # 'P' (Index pointing horizontally forward, Middle pointing DOWN ~90 deg, Thumb resting on middle knuckle)
-        if (ext[1] > 0.45 or index_horizontal or index_up) and middle_extended_down and not ring_up and not pinky_up and (d_t4_pip10 < 0.40 or d_t4_mcp9 < 0.40):
+        # -------------------------------------------------------------
+        # 3. HIERARCHICAL FINGER-EXTENSION DECISION HIERARCHY
+        # -------------------------------------------------------------
+        up_count = sum([index_up, middle_up, ring_up, pinky_up])
+
+        # === 3A. ORIENTATION EXCEPTIONS (Evaluated first to prevent fist false-positives) ===
+        # 'P' (Index pointing horizontally forward/up, Middle pointing straight DOWN ~90 deg, Thumb resting on middle joint)
+        if middle_extended_down and (index_horizontal or ext[1] > 0.35 or index_up) and not ring_up and not pinky_up:
             candidates.append(("P", 0.96))
             candidates.append(("K", 0.82))
 
-        # 'K' (Index extended straight UP, Middle angled forward/up ~45 deg, Thumb upright between index & middle knuckles)
-        elif index_up and (ext[2] > 0.50 or pts[12][1] < pts[9][1]) and not middle_extended_down and not ring_up and not pinky_up and (d_t4_mcp9 < 0.38 or d_t4_pip10 < 0.38) and (pts[4][1] < pts[2][1] and pts[4][1] < pts[5][1] + 0.02):
-            candidates.append(("K", 0.96))
-            candidates.append(("P", 0.85))
-            candidates.append(("V", 0.82))
-
-        # === 3B. 'L', 'Q', 'G', 'H' (Single/Double finger with extended thumb or horizontal) ===
-        # 'Q' (Downward 'G': Index and Thumb pointing straight downward parallel to each other)
-        elif index_extended_down and pts[4][1] > pts[1][1] and not middle_up and not ring_up and not pinky_up and not middle_extended_down:
-            candidates.append(("Q", 0.95))
+        # 'Q' (Downward 'G': Index pointing downward, Thumb pointing downward parallel to it)
+        elif index_extended_down and (pts[4][1] > pts[1][1] or pts[4][1] > pts[2][1]) and not middle_up and not ring_up and not pinky_up and not middle_extended_down:
+            candidates.append(("Q", 0.96))
             candidates.append(("G", 0.80))
             candidates.append(("P", 0.75))
 
-        # 'L' (Thumb and Index UP at 90 deg right angle, Middle/Ring/Pinky curled into fist)
-        elif thumb_extended and index_up and not middle_up and not ring_up and not pinky_up and not middle_extended_down:
-            if d_t4_t8 > 0.35:
-                candidates.append(("L", 0.96))
-                candidates.append(("D", 0.85))
-            else:
-                candidates.append(("D", 0.90))
-                candidates.append(("L", 0.85))
+        # 'H' (Index and Middle fingers pointing horizontally sideways parallel together)
+        elif index_horizontal and middle_horizontal and not ring_up and not pinky_up:
+            candidates.append(("H", 0.96))
+            candidates.append(("G", 0.82))
 
         # 'G' (Index and Thumb pointing horizontally sideways parallel, other fingers curled)
         elif index_horizontal and not index_hooked and not middle_horizontal and not middle_up and not ring_up and not pinky_up:
-            candidates.append(("G", 0.95))
+            candidates.append(("G", 0.96))
             candidates.append(("H", 0.80))
             candidates.append(("Q", 0.75))
 
-        # 'H' (Index and Middle fingers pointing horizontally sideways parallel together)
-        elif index_horizontal and middle_horizontal and not ring_up and not pinky_up:
-            candidates.append(("H", 0.95))
-            candidates.append(("G", 0.82))
-
-        # === 3C. 'X', 'D', '1' (Single index digit variations) ===
         # 'X' (Index finger hooked/bent at middle PIP joint, remaining fingers curled)
         elif index_hooked and not middle_up and not ring_up and not pinky_up:
-            candidates.append(("X", 0.95))
+            candidates.append(("X", 0.96))
             candidates.append(("D", 0.78))
             candidates.append(("1", 0.75))
 
-        # 'D' vs '1' (Single upright index finger)
-        elif index_up and not middle_up and not ring_up and not pinky_up and not thumb_extended and not middle_extended_down:
-            if d_t4_t12 < 0.32 or d_t4_t16 < 0.35:
-                candidates.append(("D", 0.96))
-                candidates.append(("1", 0.88))
-            else:
-                candidates.append(("1", 0.95))
-                candidates.append(("D", 0.88))
+        # === 3B. PINCH & LOOP EXCEPTION: 'F', 'OKAY', '9' ===
+        # Thumb and Index tips touching in a ring, remaining three fingers (middle, ring, pinky) extended UP
+        elif d_t4_t8 < 0.28 and middle_up and ring_up and pinky_up:
+            candidates.append(("F", 0.96))
+            candidates.append(("OKAY", 0.96))
+            candidates.append(("9", 0.92))
 
-        # === 3D. 'I LOVE YOU', 'Y', 'I', 'J' (Pinky extended families) ===
-        # 'I LOVE YOU' (Thumb, Index, Pinky UP simultaneously, Middle & Ring DOWN)
-        elif thumb_extended and index_up and pinky_up and not middle_up and not ring_up:
-            candidates.append(("I LOVE YOU", 0.97))
-            candidates.append(("Y", 0.82))
-
-        # 'Y' (Thumb and Pinky extended wide in opposite directions, Index/Middle/Ring curled)
-        elif thumb_extended and pinky_up and not index_up and not middle_up and not ring_up:
-            candidates.append(("Y", 0.96))
-            candidates.append(("I LOVE YOU", 0.80))
-
-        # 'I' and 'J' static base (Pinky UP only, Thumb folded across curled fingers)
-        elif pinky_up and not index_up and not middle_up and not ring_up and not thumb_extended:
-            candidates.append(("I", 0.96))
-            candidates.append(("J", 0.82))  # Static candidate for J
-
-        # === 3E. 'V', 'PEACE', 'U', 'R', '2' (Two upright fingers: Index + Middle) ===
-        elif index_up and middle_up and not ring_up and not pinky_up and not middle_extended_down:
-            # Crossed fingers test for 'R'
-            is_crossed = (pts[8][0] > pts[12][0] + 0.01) if handedness == "Right" else (pts[8][0] < pts[12][0] - 0.01)
-            if is_crossed:
-                candidates.append(("R", 0.95))
-                candidates.append(("U", 0.85))
-                candidates.append(("V", 0.80))
-            elif d_t8_t12 < 0.16:
-                # 'U' (Index and Middle pressed tightly together side-by-side)
-                candidates.append(("U", 0.95))
-                candidates.append(("V", 0.82))
-                candidates.append(("2", 0.80))
-            else:
-                # 'V' / 'PEACE' / '2' (Index and Middle spread apart in 'V')
-                candidates.append(("V", 0.95))
-                candidates.append(("PEACE", 0.94))
-                candidates.append(("2", 0.92))
-                candidates.append(("U", 0.82))
-
-        # === 3F. 'W', '3' (Three upright fingers: Index, Middle, Ring) ===
-        elif index_up and middle_up and ring_up and not pinky_up:
-            candidates.append(("W", 0.95))
-            candidates.append(("3", 0.92))
-
-        elif thumb_extended and index_up and middle_up and not ring_up and not pinky_up:
-            candidates.append(("3", 0.95))
-            candidates.append(("W", 0.86))
-
-        # === 3G. PINCH & LOOP GESTURES: 'F', 'OKAY', '9', 'O', 'C' ===
-        elif d_t4_t8 < 0.26:
-            if middle_up and ring_up and pinky_up:
-                candidates.append(("F", 0.96))
-                candidates.append(("OKAY", 0.95))
-                candidates.append(("9", 0.92))
-            elif not middle_up and not ring_up and not pinky_up:
-                candidates.append(("O", 0.95))
-                candidates.append(("0", 0.92))
-                candidates.append(("C", 0.82))
-
-        elif 0.26 <= d_t4_t8 < 0.52 and not index_up and not middle_up and not ring_up and not pinky_up and not index_extended_down and not middle_extended_down:
-            # 'C' (Smooth open arc between curved fingers and thumb)
-            candidates.append(("C", 0.94))
-            candidates.append(("O", 0.85))
-
-        # === 3H. FOUR OR FIVE FINGERS UP: 'B', '4', '5', 'STOP', 'THANK YOU', 'HELLO', 'PLEASE' ===
-        elif index_up and middle_up and ring_up and pinky_up:
-            if thumb_extended or d_t4_mcp5 > 0.38:
+        # === 3C. CATEGORICAL BRANCHING BY EXTENDED FINGER COUNT (up_count) ===
+        # --- FOUR FINGERS UP (Index, Middle, Ring, Pinky) ---
+        elif up_count == 4:
+            thumb_open_lateral = (pts[4][0] < pts[2][0] - 0.03) if handedness == "Right" else (pts[4][0] > pts[2][0] + 0.03)
+            if thumb_open_lateral or (thumb_extended and d_t4_mcp5 > 0.70):
                 if palm_facing_camera:
+                    candidates.append(("STOP", 0.96))
+                    candidates.append(("5", 0.95))
+                    candidates.append(("B", 0.80))
+                    candidates.append(("THANK YOU", 0.75))
+                    candidates.append(("HELLO", 0.70))
+                else:
+                    candidates.append(("5", 0.96))
                     candidates.append(("STOP", 0.95))
-                candidates.append(("5", 0.90))
-                candidates.append(("THANK YOU", 0.75))
-                candidates.append(("HELLO", 0.70))
-                candidates.append(("PLEASE", 0.65))
+                    candidates.append(("B", 0.80))
             else:
-                if d_t8_t12 < 0.15 and d_t12_t16 < 0.15:
+                if d_t8_t12 < 0.18 and d_t12_t16 < 0.18:
                     candidates.append(("B", 0.96))
-                    candidates.append(("4", 0.88))
+                    candidates.append(("4", 0.92))
+                    candidates.append(("STOP", 0.80))
                 else:
-                    candidates.append(("4", 0.94))
-                    candidates.append(("B", 0.88))
+                    candidates.append(("4", 0.95))
+                    candidates.append(("B", 0.90))
+                    candidates.append(("STOP", 0.80))
 
-        # === 3I. FIST FAMILY: 'A', 'S', 'E', 'T', 'M', 'N', 'THUMBS UP', 'THUMBS DOWN', 'YES' ===
-        elif not index_up and not middle_up and not ring_up and not pinky_up:
-            if thumb_high_up:
-                candidates.append(("THUMBS UP", 0.97))
-                candidates.append(("YES", 0.75))
-            elif pts[4][1] > pts[0][1] + 0.12 and thumb_extended and not index_extended_down:
-                candidates.append(("THUMBS DOWN", 0.96))
+        # --- THREE FINGERS UP ---
+        elif up_count == 3:
+            if index_up and middle_up and ring_up and not pinky_up:
+                candidates.append(("W", 0.96))
+                candidates.append(("3", 0.92))
+            elif thumb_extended and index_up and middle_up and not ring_up and not pinky_up:
+                candidates.append(("3", 0.96))
+                candidates.append(("W", 0.86))
+            elif thumb_extended and index_up and pinky_up and not middle_up and not ring_up:
+                candidates.append(("I LOVE YOU", 0.97))
+                candidates.append(("Y", 0.82))
             else:
-                # Disambiguate closed fist letters based on thumb placement:
-                is_lateral = (pts[4][0] <= pts[5][0] + 0.02) if handedness == "Right" else (pts[4][0] >= pts[5][0] - 0.02)
+                candidates.append(("W", 0.88))
+                candidates.append(("3", 0.82))
 
-                # 'E': Fingertips resting directly on folded thumb pad
-                if (d_t4_t8 < 0.65 and d_t4_t12 < 0.65) and pts[4][1] >= pts[2][1] - 0.05 and not is_lateral:
-                    candidates.append(("E", 0.95))
-                    candidates.append(("S", 0.82))
-                    candidates.append(("A", 0.80))
-                # 'T': Thumb tucked poking up between index (5) and middle (9) knuckles
-                elif d_t4_mcp5 < 0.28 and d_t4_mcp9 < 0.28 and pts[4][1] < pts[5][1] + 0.01:
-                    candidates.append(("T", 0.95))
-                    candidates.append(("S", 0.82))
-                    candidates.append(("A", 0.80))
-                # 'N': Thumb tucked under 2 fingers (pokes up between middle 9 and ring 13 knuckles)
-                elif d_t4_mcp9 < 0.32 and d_t4_mcp13 < 0.35 and pts[4][1] < pts[9][1] + 0.01:
-                    candidates.append(("N", 0.94))
-                    candidates.append(("M", 0.85))
-                    candidates.append(("T", 0.82))
-                # 'M': Thumb tucked under 3 fingers (reaches across to ring 13 / pinky 17 knuckle, poking up)
-                elif (d_t4_mcp13 < 0.35 or d_t4_mcp17 < 0.48) and pts[4][1] < pts[13][1] + 0.01:
-                    candidates.append(("M", 0.94))
-                    candidates.append(("N", 0.85))
-                    candidates.append(("S", 0.80))
-                # 'A': Thumb vertical along outer lateral edge of index knuckle (pointing up)
-                elif ((pts[4][0] <= pts[5][0] + 0.02) if handedness == "Right" else (pts[4][0] >= pts[5][0] - 0.02)) and pts[4][1] < pts[5][1] + 0.01 and pts[4][1] < pts[2][1]:
-                    candidates.append(("A", 0.95))
-                    candidates.append(("S", 0.85))
-                    candidates.append(("YES", 0.70))
-                # 'S': Thumb wrapped horizontally across front of middle knuckles
+        # --- TWO FINGERS UP ---
+        elif up_count == 2:
+            if index_up and middle_up and not ring_up and not pinky_up:
+                # Crossed fingers test for 'R'
+                is_crossed = (pts[8][0] > pts[12][0] + 0.01) if handedness == "Right" else (pts[8][0] < pts[12][0] - 0.01)
+                if is_crossed:
+                    candidates.append(("R", 0.96))
+                    candidates.append(("U", 0.85))
+                    candidates.append(("V", 0.80))
                 else:
-                    candidates.append(("S", 0.94))
-                    candidates.append(("A", 0.84))
-                    candidates.append(("YES", 0.70))
+                    # Disambiguate 'K' vs 'PEACE' / 'V' / 'U' / '2'
+                    # True 'K' requires: thumb wedged upright between index & middle knuckles with middle angled forward
+                    is_thumb_between = (min(pts[5][0], pts[9][0]) - 0.02 <= pts[4][0] <= max(pts[5][0], pts[9][0]) + 0.02)
+                    middle_angled = (pts[12][2] > pts[8][2] + 0.03 or abs(pts[12][0] - pts[9][0]) > 0.04)
+                    is_true_k = is_thumb_between and middle_angled and (pts[4][1] < pts[5][1] + 0.02)
+
+                    if is_true_k:
+                        candidates.append(("K", 0.96))
+                        candidates.append(("P", 0.85))
+                        candidates.append(("V", 0.82))
+                    elif d_t8_t12 < 0.20:
+                        # 'U' (Index and Middle pressed tightly together)
+                        candidates.append(("U", 0.96))
+                        candidates.append(("V", 0.88))
+                        candidates.append(("PEACE", 0.86))
+                        candidates.append(("2", 0.85))
+                    else:
+                        # 'PEACE' / 'V' / '2' (Index and Middle spread apart in 'V')
+                        candidates.append(("PEACE", 0.96))
+                        candidates.append(("V", 0.96))
+                        candidates.append(("2", 0.92))
+                        candidates.append(("U", 0.80))
+            elif thumb_extended and pinky_up and not index_up and not middle_up and not ring_up:
+                candidates.append(("Y", 0.96))
+                candidates.append(("I LOVE YOU", 0.82))
+            elif thumb_extended and index_up and pinky_up and not middle_up and not ring_up:
+                candidates.append(("I LOVE YOU", 0.97))
+                candidates.append(("Y", 0.82))
+            elif thumb_extended and index_up and not middle_up and not ring_up and not pinky_up:
+                candidates.append(("L", 0.96))
+                candidates.append(("D", 0.80))
+            else:
+                candidates.append(("V", 0.85))
+                candidates.append(("PEACE", 0.85))
+                candidates.append(("2", 0.80))
+
+        # --- ONE FINGER UP ---
+        elif up_count == 1:
+            if index_up and not middle_up and not ring_up and not pinky_up:
+                is_thumb_lateral = (pts[4][0] < pts[5][0] - 0.08) if handedness == "Right" else (pts[4][0] > pts[5][0] + 0.08)
+                if (thumb_extended and d_t4_t8 > 0.40) or (is_thumb_lateral and d_t4_t8 > 0.35):
+                    candidates.append(("L", 0.96))
+                    candidates.append(("D", 0.80))
+                else:
+                    candidates.append(("D", 0.96))
+                    candidates.append(("1", 0.95))
+                    candidates.append(("L", 0.75))
+            elif pinky_up and not index_up and not middle_up and not ring_up:
+                candidates.append(("I", 0.96))
+                candidates.append(("J", 0.85))
+            else:
+                candidates.append(("1", 0.85))
+                candidates.append(("D", 0.80))
+
+        # --- ZERO FINGERS UP (Fist Family or Curved Pinch) ---
+        else:
+            is_fist = all(ext[i] <= 0.45 for i in range(1, 5))
+            if d_t4_t8 < 0.22:
+                candidates.append(("O", 0.96))
+                candidates.append(("0", 0.95))
+                candidates.append(("C", 0.85))
+            elif not is_fist and (0.22 <= d_t4_t8 < 0.85):
+                # 'C' (Smooth open arc between curved fingers and thumb)
+                candidates.append(("C", 0.95))
+                candidates.append(("O", 0.85))
+            else:
+                # Fist family
+                if thumb_high_up:
+                    candidates.append(("THUMBS UP", 0.97))
+                    candidates.append(("YES", 0.80))
+                elif (pts[4][1] > pts[0][1] + 0.10) and (pts[4][1] > pts[1][1] + 0.05):
+                    candidates.append(("THUMBS DOWN", 0.96))
+                else:
+                    is_lateral = (pts[4][0] <= pts[5][0] + 0.02) if handedness == "Right" else (pts[4][0] >= pts[5][0] - 0.02)
+                    # 'E': Fingertips resting on thumb pad
+                    if (d_t4_t8 < 0.65 and d_t4_t12 < 0.65) and pts[4][1] >= pts[2][1] - 0.05 and not is_lateral and d_t4_mcp5 > 0.28:
+                        candidates.append(("E", 0.96))
+                        candidates.append(("S", 0.82))
+                        candidates.append(("A", 0.80))
+                    # 'T': Thumb between index & middle knuckles
+                    elif d_t4_mcp5 < 0.28 and d_t4_mcp9 < 0.28 and pts[4][1] < pts[5][1] + 0.01:
+                        candidates.append(("T", 0.96))
+                        candidates.append(("S", 0.82))
+                        candidates.append(("A", 0.80))
+                    # 'N': Thumb between middle & ring knuckles
+                    elif d_t4_mcp9 < 0.32 and d_t4_mcp13 < 0.35 and pts[4][1] < pts[9][1] + 0.01:
+                        candidates.append(("N", 0.95))
+                        candidates.append(("M", 0.85))
+                        candidates.append(("T", 0.82))
+                    # 'M': Thumb under 3 fingers
+                    elif (d_t4_mcp13 < 0.35 or d_t4_mcp17 < 0.48) and pts[4][1] < pts[13][1] + 0.01:
+                        candidates.append(("M", 0.95))
+                        candidates.append(("N", 0.85))
+                        candidates.append(("S", 0.80))
+                    # 'A': Thumb vertical along outer lateral edge of index knuckle
+                    elif is_lateral and pts[4][1] < pts[5][1] + 0.01 and pts[4][1] < pts[2][1]:
+                        candidates.append(("A", 0.96))
+                        candidates.append(("S", 0.85))
+                        candidates.append(("YES", 0.70))
+                    # 'S': Thumb wrapped horizontally across front of middle knuckles
+                    else:
+                        candidates.append(("S", 0.96))
+                        candidates.append(("A", 0.84))
+                        candidates.append(("YES", 0.70))
 
         # Fallback catch-all
         if not candidates:

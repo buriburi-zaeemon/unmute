@@ -1150,16 +1150,36 @@ class UnmuteApp {
       return;
     }
 
-    // Determine match score for target
+    // Determine match score for target with canonical aliases
     let matchScore = 0;
     const target = this.currentPracticeItem;
     const pred = data.predicted_sign;
 
-    if (pred === target) {
+    const SIGN_ALIASES = {
+      "PEACE": ["PEACE", "V", "2"],
+      "V": ["V", "PEACE", "2"],
+      "2": ["2", "V", "PEACE"],
+      "OKAY": ["OKAY", "F", "9"],
+      "F": ["F", "OKAY", "9"],
+      "9": ["9", "F", "OKAY"],
+      "STOP": ["STOP", "5", "B"],
+      "5": ["5", "STOP"],
+      "B": ["B", "4"],
+      "4": ["4", "B"],
+      "D": ["D", "1"],
+      "1": ["1", "D"],
+      "O": ["O", "0"],
+      "0": ["0", "O"],
+      "THUMBS UP": ["THUMBS UP", "A", "YES"]
+    };
+
+    const targetAliases = SIGN_ALIASES[target] || [target];
+
+    if (targetAliases.includes(pred)) {
       matchScore = Math.round(data.confidence * 100);
     } else {
       const topList = data.top_predictions || [];
-      const matchCandidate = topList.find(p => p.label === target);
+      const matchCandidate = topList.find(p => targetAliases.includes(p.label));
       if (matchCandidate) {
         matchScore = Math.round(matchCandidate.confidence * 100);
       }
