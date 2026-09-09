@@ -253,6 +253,25 @@ Do not begin major grammar implementation until the token interface is stable.
 
 # WEEK 3 — RULE-BASED SENTENCE FORMATION
 
+### 🚨 URGENT PRIORITY WORK — System-Wide Classifier Overhaul Integration, Practice Studio Aliasing & Subtitle Verification
+
+This task must be treated as your most important and urgent work in Week 3, coordinated directly with Contributor 1's overhaul of the core sign recognition classifier (`sign_engine/asl_classifier.py`):
+
+1. **Interactive Practice Studio Overhaul (`static/app.js`)**:
+   - Implement the authoritative **Handshape Alias Matrix** (`SIGN_ALIASES`: `PEACE` ↔ `V` ↔ `2`, `OKAY` ↔ `F` ↔ `9`, `STOP` ↔ `5` ↔ `B`, `1` ↔ `D`, `0` ↔ `O`) in `evaluatePracticeMatch()`.
+   - Ensure the pose-matching meter reliably scores ≥ 90% when holding the correct physical handshape for both ASL and ISL challenge items.
+   - Refine the challenge pool generation in `nextPracticeChallenge()` to focus on static verifiable signs within the single-frame camera loop.
+
+2. **Live Camera WebSocket Pipeline Validation (`/ws/live-stream` & `static/app.js`)**:
+   - Verify that the live stream WebSocket properly passes the newly disambiguated, stabilized signs into the **Live Letter Accumulator**, **Sentence Composer**, and **Browser Text-To-Speech (TTS)** without spurious letter jumping or word corruption.
+   - Ensure TTS and UI display render clean, stable tokens for both ASL and ISL modes.
+
+3. **Offline Video Processing & Subtitle Pipeline Guarantee (`sign_engine/video_processor.py`)**:
+   - Test and verify that uploaded video files processed through `VideoProcessor` leverage the overhauled sign classifier to produce accurate, uncorrupted `.srt`, `.vtt`, `.json`, and `.txt` subtitle exports and translation transcripts.
+
+4. **System-Wide End-to-End Integration Tests**:
+   - Write integration tests asserting that the newly overhauled classifier predictions flow correctly through the WebSocket, REST endpoints, sequence buffers, and subtitle exporters.
+
 ## Goals
 
 Implement the initial controlled-vocabulary sentence-processing layer for both ASL and ISL.
@@ -354,6 +373,7 @@ Report:
 5. Unit-test results for both language pipelines.
 6. Known limitations.
 7. Any vocabulary assumptions that need confirmation from the ML contributors.
+8. System-wide classifier overhaul integration results (Practice Studio matching, Live Stream WebSocket accumulation, and Video Processor subtitle exports).
 
 Do not claim unrestricted natural-language translation.
 

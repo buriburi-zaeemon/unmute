@@ -486,6 +486,19 @@ Prepare actual dynamic training data for both ASL and ISL.
 
 Tasks:
 
+### 🚨 URGENT PRIORITY WORK — Core Classifier Overhaul Integration & Temporal Tracker Boundary Guarding
+
+This task must be treated as your most important and urgent work in Week 3, coordinated directly with Contributor 1's overhaul of the core sign recognition classifier (`sign_engine/asl_classifier.py`):
+
+1. **Temporal Tracker Synchronization with Overhauled Static Decision Hierarchy**:
+   - Synchronize `TemporalGestureTracker` in `sign_engine/temporal_tracker.py` with Contributor 1's new finger-extension decision hierarchy to ensure dynamic sign tracking seamlessly integrates with the disambiguated static candidate stream across the whole application.
+   - Enforce strict temporal boundary guarding and velocity thresholds so dynamic gestures (`HELLO`, `THANK YOU`, `YES`, `NO`, `PLEASE`, `J`, `Z`) never collide with, hijack, or corrupt static signs when a user is holding a static pose (e.g., distinguishing a nodding fist for `YES` from static closed fists `A`, `S`, `E`, `T`, `THUMBS UP`, and open-hand wave `HELLO` from static flat hand `STOP`, `B`, `5`).
+   - Validate that dynamic cooldowns and continuous likelihood thresholds prevent spurious triggers during static fingerspelling in both the Live Camera WebSocket stream and Video Processor.
+
+2. **Bilingual Stream Integrity (ASL & ISL)**:
+   - Ensure the temporal rolling window (36 frames) properly handles both single-hand (109-dim ASL) and dual-hand (228-dim ISL) landmark sequences without temporal frame drops, buffering corruptions, or dimension mismatches.
+   - Ensure dynamic likelihoods passed to `classifier.classify_hand()` are properly formatted and normalized to preserve stability in the live letter accumulator and sentence composer.
+
 1. Process selected dynamic sign samples for ASL (`HELLO`, `THANK YOU`, `YES`, `NO`, `PLEASE`, `J`, `Z`) and ISL (`HELLO`, `THANK YOU`, `YES`, `NO`, `PLEASE`, `HELP`, `WATER`).
 2. Extract unimanual landmark sequences for ASL and bimanual landmark sequences for ISL.
 3. Verify feature consistency (109 dims single-hand, 228 dims dual-hand).
@@ -499,6 +512,7 @@ Tasks:
 
 Report:
 
+- Core classifier overhaul integration and temporal tracker boundary validation results
 - Number of dynamic samples prepared (ASL and ISL)
 - Dynamic classes across both languages
 - Tensor shapes (single-hand vs dual-hand)

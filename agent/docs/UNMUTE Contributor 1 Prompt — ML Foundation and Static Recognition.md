@@ -407,6 +407,21 @@ Do not proceed with model training until the dataset pipeline is understandable 
 
 Focus on:
 
+### 🚨 URGENT PRIORITY WORK — Core Sign Classifier Overhaul & Disambiguation Hierarchy
+
+This task must be treated as your most important and urgent work in Week 3, providing the foundational accurate classification layer for Contributors 2 and 3 and the entire application:
+
+- **Restructure Core Classifier (`sign_engine/asl_classifier.py`)**:
+  - Overhaul `ASLClassifier` into a clean, robust **Finger-Extension Decision Hierarchy** (grouping by discrete finger extension states: 0, 1, 2, 3, 4 fingers extended, pinch/curled shapes, and fist families).
+  - Eliminate widespread sign collisions across the entire application:
+    - Disambiguate `K` vs `V` / `PEACE` / `U` / `R` / `2`.
+    - Disambiguate `L` vs `D` / `1` (requiring true perpendicular 90° thumb extension).
+    - Disambiguate `B` vs `5` / `STOP` (thumb folded flat across palm vs open palm).
+    - Disambiguate `S` vs `M` / `N` (thumb wrapped horizontally across front).
+    - Disambiguate `C` vs `L` (smooth open curved arc).
+  - Ensure all candidate lists populate canonical synonyms/aliases (`PEACE` with `V` and `2`, `OKAY` with `F`, `STOP` with `B` and `5`, `1` with `D`, `0` with `O`) with properly calibrated confidence scores.
+  - Expand the automated test suite in `tests/test_sign_engine.py` to assert correct recognition across all 26 letters and static phrases.
+
 - Creating the PyTorch Dataset and DataLoader for both ASL (109-dim) and ISL (228-dim).
 - Implementing the static MLPs:
   - `StaticASL_MLP` for unimanual ASL recognition (109-dim input, 41 classes).
@@ -423,6 +438,7 @@ Keep the architectures simple and explainable.
 
 Before beginning Week 4, stop and report:
 
+- Core sign classifier overhaul status and regression test results across all 26 letters and static phrases.
 - Final MLP architectures (ASL and ISL).
 - Input feature dimensionalities (109-dim ASL, 228-dim ISL).
 - Number of output classes (41 classes for ASL, 44 classes for ISL).
