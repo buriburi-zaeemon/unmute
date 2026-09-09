@@ -511,3 +511,63 @@ def test_c_vs_o_disambiguation():
     assert res_c.predicted_sign in ("C", "O")
 
 
+def test_u_vs_v_vs_r_disambiguation():
+    """Verify 'U' (together), 'V' (spread), and 'R' (crossed) are accurately recognized."""
+    classifier = ASLClassifier()
+
+    # 1. 'U' Hand: Index and Middle upright pressed close together
+    u_hand = _make_hand(
+        thumb_pts=_curled(0.42, 0.74),
+        index_pts=_upright(0.46, 0.64),
+        middle_pts=_upright(0.48, 0.63),
+        ring_pts=_curled(0.56, 0.65),
+        pinky_pts=_curled(0.62, 0.68),
+    )
+    res_u = classifier.classify_hand(u_hand)
+    assert res_u.predicted_sign in ("U", "2", "V")
+    # Verify 'U' is among the top candidates
+    top_labels = [p.label for p in res_u.top_predictions]
+    assert "U" in top_labels
+
+    # 2. 'R' Hand: Index crossed over Middle
+    r_hand = _make_hand(
+        thumb_pts=_curled(0.42, 0.74),
+        index_pts=[(0.44, 0.64, 0.0), (0.47, 0.54, 0.0), (0.50, 0.44, 0.0), (0.53, 0.35, 0.0)],
+        middle_pts=[(0.50, 0.63, 0.0), (0.48, 0.53, 0.0), (0.46, 0.44, 0.0), (0.44, 0.35, 0.0)],
+        ring_pts=_curled(0.56, 0.65),
+        pinky_pts=_curled(0.62, 0.68),
+    )
+    res_r = classifier.classify_hand(r_hand)
+    assert res_r.predicted_sign in ("R", "U")
+    top_labels_r = [p.label for p in res_r.top_predictions]
+    assert "R" in top_labels_r
+
+
+def test_universal_hand_proportion_invariance():
+    """Verify Self-Phalange Bone Ratio works across diverse hand proportions (children, slender, broad)."""
+    classifier = ASLClassifier()
+
+    # Slender hand with long fingers (finger length > palm length)
+    slender_u = _make_hand(
+        thumb_pts=_curled(0.42, 0.74),
+        index_pts=[(0.46, 0.64, 0.0), (0.46, 0.50, 0.0), (0.46, 0.36, 0.0), (0.46, 0.22, 0.0)],
+        middle_pts=[(0.48, 0.63, 0.0), (0.48, 0.49, 0.0), (0.48, 0.35, 0.0), (0.48, 0.21, 0.0)],
+        ring_pts=_curled(0.56, 0.65),
+        pinky_pts=_curled(0.62, 0.68),
+    )
+    res_slender = classifier.classify_hand(slender_u)
+    assert "U" in [p.label for p in res_slender.top_predictions]
+
+    # Broad hand with short fingers (finger length < 0.65 of palm length)
+    broad_u = _make_hand(
+        thumb_pts=_curled(0.40, 0.76),
+        index_pts=[(0.46, 0.64, 0.0), (0.46, 0.58, 0.0), (0.46, 0.52, 0.0), (0.46, 0.46, 0.0)],
+        middle_pts=[(0.48, 0.63, 0.0), (0.48, 0.57, 0.0), (0.48, 0.51, 0.0), (0.48, 0.45, 0.0)],
+        ring_pts=_curled(0.58, 0.65),
+        pinky_pts=_curled(0.66, 0.68),
+    )
+    res_broad = classifier.classify_hand(broad_u)
+    assert "U" in [p.label for p in res_broad.top_predictions]
+
+
+

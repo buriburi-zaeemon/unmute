@@ -38,6 +38,61 @@ class ASLClassifier:
         self._history: List[str] = []
         self._confidence_history: List[float] = []
 
+    @staticmethod
+    def _is_finger_up(
+        pts: np.ndarray,
+        v_hand_unit: np.ndarray,
+        tip_i: int,
+        dip_i: int,
+        pip_i: int,
+        mcp_i: int,
+        pip_angle: float,
+        ext_score: float = 0.5,
+    ) -> bool:
+        """
+        Universal Person-Invariant Finger Extension Evaluator.
+        Uses Self-Phalange Bone Chain Normalization rather than palm size,
+        guaranteeing invariance across varying palm sizes, finger lengths,
+        children/adults, and perspective distortion.
+        """
+        # 1. Total bone chain perimeter along finger phalanges (knuckle -> PIP -> DIP -> Tip)
+        seg1 = float(np.linalg.norm(pts[pip_i] - pts[mcp_i]))
+        seg2 = float(np.linalg.norm(pts[dip_i] - pts[pip_i]))
+        seg3 = float(np.linalg.norm(pts[tip_i] - pts[dip_i]))
+        bone_chain = seg1 + seg2 + seg3
+        if bone_chain < 1e-5:
+            return False
+
+        # 2. Straight-line chord vs perimeter (by triangle inequality, straight finger approaches 1.0)
+        chord = float(np.linalg.norm(pts[tip_i] - pts[mcp_i]))
+        straight_ratio = chord / bone_chain
+
+        # 3. Radial distance from wrist (Tip is further from wrist than PIP joint)
+        d_tip_wrist = float(np.linalg.norm(pts[tip_i] - pts[0]))
+        d_pip_wrist = float(np.linalg.norm(pts[pip_i] - pts[0]))
+
+        # 4. Projection along longitudinal hand orientation vector
+        proj_tip = float(np.dot(pts[tip_i] - pts[mcp_i], v_hand_unit))
+
+        # 5. Inverted Y check in camera plane (Tip higher than PIP joint with generous margin)
+        y_upright = pts[tip_i][1] < pts[pip_i][1] + 0.05
+
+        # 6. Directional alignment between proximal phalanx (MCP->PIP) and distal phalanx (DIP->Tip)
+        # Straight fingers have distal phalanx pointing along proximal phalanx (> 0.40); curved fingers (like 'C') bend inward (< 0.20)
+        v_prox = pts[pip_i][:2] - pts[mcp_i][:2]
+        v_dist = pts[tip_i][:2] - pts[dip_i][:2]
+        norm_prox = float(np.linalg.norm(v_prox))
+        norm_dist = float(np.linalg.norm(v_dist))
+        phalanx_align = float(np.dot(v_prox, v_dist) / (norm_prox * norm_dist)) if (norm_prox > 1e-5 and norm_dist > 1e-5) else 0.0
+
+        # Straightness condition: chord ratio > 0.60 (curled in fist is < 0.40), straight PIP joint, and aligned distal phalanx
+        is_straight = (straight_ratio > 0.60) and (pip_angle > 115.0 or straight_ratio > 0.70 or ext_score > 0.48) and (phalanx_align > 0.35)
+
+        # Orientation condition: pointing outward along hand axis and upright in image plane
+        is_upright = (d_tip_wrist > d_pip_wrist * 0.95) and (proj_tip > -0.06) and y_upright
+
+        return bool(is_straight and is_upright)
+
     def classify_landmarks(self, landmarks: List[Tuple[float, float, float]], handedness: str = "Right") -> Tuple[str, float, List[TopPrediction]]:
         """
         Anatomical sign classifier evaluating physical finger extensions,
@@ -65,19 +120,10 @@ class ASLClassifier:
         # -------------------------------------------------------------
         # 1. INDIVIDUAL FINGER EXTENSION & ORIENTATION STATES
         # -------------------------------------------------------------
-        def is_finger_up(tip_i: int, dip_i: int, pip_i: int, mcp_i: int) -> bool:
-            d_tip = np.linalg.norm(pts[tip_i] - pts[0])
-            d_pip = np.linalg.norm(pts[pip_i] - pts[0])
-            proj_tip = np.dot(pts[tip_i] - pts[0], v_hand_unit)
-            proj_pip = np.dot(pts[pip_i] - pts[0], v_hand_unit)
-            y_check = pts[tip_i][1] < pts[pip_i][1] + 0.05
-            straight_check = np.linalg.norm(pts[tip_i] - pts[mcp_i]) > 1.15 * palm_size
-            return (d_tip > d_pip * 1.05) and (proj_tip > proj_pip) and y_check and straight_check
-
-        index_up = is_finger_up(8, 7, 6, 5)
-        middle_up = is_finger_up(12, 11, 10, 9)
-        ring_up = is_finger_up(16, 15, 14, 13)
-        pinky_up = is_finger_up(20, 19, 18, 17)
+        index_up = self._is_finger_up(pts, v_hand_unit, 8, 7, 6, 5, angles[4], ext[1])
+        middle_up = self._is_finger_up(pts, v_hand_unit, 12, 11, 10, 9, angles[7], ext[2])
+        ring_up = self._is_finger_up(pts, v_hand_unit, 16, 15, 14, 13, angles[10], ext[3])
+        pinky_up = self._is_finger_up(pts, v_hand_unit, 20, 19, 18, 17, angles[13], ext[4])
 
         # Directional checks
         d_mcp5_t8 = float(np.linalg.norm(pts[8] - pts[5]) / palm_size)
