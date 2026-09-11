@@ -90,29 +90,32 @@ Direct development on `main` is strictly prohibited. Branching is mandatory to e
 
 ### Required Cyclic Step-by-Step Workflow:
 
-1. **Pull Latest `main` & Sync into Your Branch**:
-   At the start of every work cycle or new task, ensure your branch is based on the latest combined source of truth. Pull `main` from remote and merge it into your contributor feature branch:
+1. **Pull All Branches (Remote Sync & Upstream Merge)**:
+   At the start of every work cycle or new task, fetch all remote refs and pull latest updates for both `main` and your feature branch, then merge `main` into your feature branch to stay synchronized with the combined source of truth:
    ```bash
+   git fetch --all
    git checkout main
    git pull origin main
    git checkout contributor-3-nlp-integration
+   git pull origin contributor-3-nlp-integration
    git merge main
    ```
 
 2. **Develop & Implement Inside Your Branch**:
    Perform all code edits, model training, feature extraction, and experiments exclusively inside your assigned branch. Never edit directly on `main`.
 
-3. **Test Thoroughly Before Any Merging**:
-   Run the complete test suite and verify that all unit, regression, and integration tests pass cleanly with zero errors:
+3. **Test Thoroughly Inside Your Branch**:
+   Run the complete test suite and verify that all unit, regression, and integration tests pass cleanly with zero errors before merging or pushing:
    ```bash
    pytest tests/ -v
    ```
 
-4. **Commit Locally in Atomic Steps**:
-   Commit working units of code on your branch with descriptive, standardized commit messages:
+4. **Commit Locally & Push Your Feature Branch**:
+   Commit working units of code on your branch with descriptive, standardized commit messages, and push your feature branch to remote so its history is always backed up:
    ```bash
    git add <modified-files>
    git commit -m "feat/fix/docs(<scope>): clear description of work done"
+   git push origin contributor-3-nlp-integration
    ```
 
 5. **Merge into `main` Only When Everything Works**:
@@ -124,15 +127,16 @@ Direct development on `main` is strictly prohibited. Branching is mandatory to e
    ```
 
 6. **Push `main` to Remote**:
-   Once the merge to `main` is validated and all tests pass without errors, push the updated `main` branch:
+   Once the merge to `main` is validated and all tests pass without errors, push the updated `main` branch to remote origin:
    ```bash
    git push origin main
    ```
 
 7. **Repeat Cycle for Every New Task**:
-   When beginning the next task, repeat this exact loop: pull latest `main`, merge `main` into your feature branch, work, test, commit, merge to `main`, and push.
+   When beginning the next task, repeat this exact loop: fetch and pull all branches (`main` and your feature branch), merge `main` into your feature branch, work, test, commit & push your feature branch, merge to `main`, and push `main`. All branches must always be pushed and pulled, not just `main`.
 
 ### Why This Is Mandatory:
+- **All Branches Always Pushed & Pulled**: Pushing and pulling both your feature branch and `main` ensures that individual branch histories are preserved remotely, while `main` continuously reflects the combined, working source of truth.
 - **Independent History Isolation**: Each contributor branch retains clean provenance and atomic responsibility without cross-pollinating unverified code.
 - **Zero Harm to `main`**: Unfinished experiments, broken dependencies, or syntax regressions remain isolated in feature branches and never compromise the live application or other contributors' workflows.
 - **Conflict Prevention**: Concurrent development across Contributors 1, 2, and 3 proceeds independently without git collisions.
