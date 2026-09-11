@@ -315,6 +315,10 @@ To protect the stability of the `main` branch, eliminate code conflicts, and pre
 
 Direct development on `main` is strictly prohibited. Branching is mandatory to ensure feature isolation, safe rollbacks, and team coordination.
 
+### Independent History & Source of Truth Architecture:
+- **Each Branch Tracks Its Own History**: Contributor branches (`contributor-1-ml-foundation`, `contributor-2-dynamic-nlp`, `contributor-3-nlp-integration`) track their own independent development history. Do not cross-merge other contributor branches into your branch; if another contributor's branch is empty or not yet active, leave it untouched.
+- **`main` Is the Combined Source of Truth**: The `main` branch serves as the single unified source of truth combining verified, tested contributions from all branches.
+
 ### Required Step-by-Step Workflow:
 
 1. **Pull Latest Changes from All Branches**:
@@ -361,6 +365,7 @@ Direct development on `main` is strictly prohibited. Branching is mandatory to e
    ```
 
 ### Why This Is Mandatory:
+- **Independent History Isolation**: Each contributor branch retains clean provenance and atomic responsibility without cross-pollinating unverified code.
 - **Zero Harm to `main`**: Unfinished experiments, broken dependencies, or syntax regressions remain isolated in feature branches and never compromise the live application or other contributors' workflows.
 - **Conflict Prevention**: Concurrent development across Contributors 1, 2, and 3 proceeds independently without git collisions.
 
