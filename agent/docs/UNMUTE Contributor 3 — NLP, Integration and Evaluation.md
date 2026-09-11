@@ -61,6 +61,98 @@ Do not use a large language model to compensate for poor recognition.
 
 ---
 
+# IMPORTANT RULES
+
+- Do not claim unrestricted ASL-to-English or ISL-to-English translation.
+- Do not use an LLM to guess missing signs.
+- Do not invent model performance metrics.
+- Do not redesign the existing web UI unnecessarily.
+- Do not replace browser speech synthesis without team approval.
+- Do not modify another contributor's ML code unnecessarily.
+- Keep the language layer deterministic and explainable.
+- Clearly distinguish actual implementation from planned work.
+- Work on your own Git branch.
+- Pause and report at every checkpoint before proceeding to the next major phase.
+
+---
+
+# MANDATORY WORKFLOW POLICY: STRICT BRANCH-FIRST DEVELOPMENT
+
+## Core Directive for All AI Agents and Contributors
+
+To protect the stability of the `main` branch, eliminate code conflicts, and prevent unverified or breaking changes from harming the core application, **all contributors and AI agents MUST adhere strictly to the branch-first development workflow**. 
+
+Direct development on `main` is strictly prohibited. Branching is mandatory to ensure feature isolation, safe rollbacks, and team coordination.
+
+### Required Step-by-Step Workflow:
+
+1. **Pull Latest Changes from All Branches**:
+   At the start of every work cycle or task, ensure your local repository has the full remote state:
+   ```bash
+   git fetch --all
+   git pull
+   ```
+
+2. **Switch to Your Dedicated Feature Branch**:
+   Always switch to your contributor-assigned branch before making any edits or starting new tasks:
+   - Contributor 1: `git checkout contributor-1-ml-foundation`
+   - Contributor 2: `git checkout contributor-2-dynamic-nlp`
+   - Contributor 3: `git checkout contributor-3-nlp-integration`
+
+3. **Develop & Implement Inside Your Branch**:
+   Perform all code edits, model training, feature extraction, and experiments exclusively inside your assigned branch.
+
+4. **Test Thoroughly Before Any Merging**:
+   Run the complete test suite and verify that all unit, regression, and integration tests pass cleanly with zero errors:
+   ```bash
+   pytest tests/ -v
+   ```
+
+5. **Commit Locally in Atomic Steps**:
+   Commit working units of code on your branch with descriptive, standardized commit messages:
+   ```bash
+   git add <modified-files>
+   git commit -m "feat/fix/docs(<scope>): clear description of work done"
+   ```
+
+6. **Merge into `main` Only When Everything Works**:
+   Only after all tasks are completed, tested, and verified to be 100% functional:
+   ```bash
+   git checkout main
+   git merge <your-contributor-branch>
+   pytest tests/ -v  # Final sanity check on main
+   ```
+
+7. **Push to Remote**:
+   Once the merge to `main` is validated and all tests pass without errors, push the updated `main` branch:
+   ```bash
+   git push origin main
+   ```
+
+### Why This Is Mandatory:
+- **Zero Harm to `main`**: Unfinished experiments, broken dependencies, or syntax regressions remain isolated in feature branches and never compromise the live application or other contributors' workflows.
+- **Conflict Prevention**: Concurrent development across Contributors 1, 2, and 3 proceeds independently without git collisions.
+
+---
+
+# STARTING PROCEDURE
+
+Before making changes:
+
+1. Inspect the current repository state.
+2. Confirm Git branch status.
+3. Create or switch to your contributor branch.
+4. Inspect the current text accumulation and backend flow.
+5. Summarize the Week 1 implementation plan.
+6. Begin Week 1.
+7. Stop at the Week 1 pause-and-report checkpoint.
+
+Do not rush directly to Week 8.
+
+Follow the timeline incrementally and coordinate with the other two contributors as their ML and dynamic-recognition components become available.
+
+---
+
 # PROJECT TIMELINE AND RESPONSIBILITIES
 
 Your work is organized around the overall eight-week UNMUTE development timeline.
@@ -829,39 +921,6 @@ Coordinate shared backend changes before making them.
 
 ---
 
-# IMPORTANT RULES
-
-- Do not claim unrestricted ASL-to-English or ISL-to-English translation.
-- Do not use an LLM to guess missing signs.
-- Do not invent model performance metrics.
-- Do not redesign the existing web UI unnecessarily.
-- Do not replace browser speech synthesis without team approval.
-- Do not modify another contributor's ML code unnecessarily.
-- Keep the language layer deterministic and explainable.
-- Clearly distinguish actual implementation from planned work.
-- Work on your own Git branch.
-- Pause and report at every checkpoint before proceeding to the next major phase.
-
----
-
-# STARTING PROCEDURE
-
-Before making changes:
-
-1. Inspect the current repository state.
-2. Confirm Git branch status.
-3. Create or switch to your contributor branch.
-4. Inspect the current text accumulation and backend flow.
-5. Summarize the Week 1 implementation plan.
-6. Begin Week 1.
-7. Stop at the Week 1 pause-and-report checkpoint.
-
-Do not rush directly to Week 8.
-
-Follow the timeline incrementally and coordinate with the other two contributors as their ML and dynamic-recognition components become available.
-
----
-
 # CRITICAL INTEGRATION & MANDATORY ARCHITECTURE UPDATE (WEEK 3)
 
 ## Architectural Alignment with Contributor 1 (ML Foundation, Static Engine & Interactive 3D Guide)
@@ -940,63 +999,4 @@ You MUST schedule and integrate these additions into your weekly deliverables as
 
 ### Week 8 — Final System Validation & Documentation Handover
 - **Cross-Platform Port Validation**: Verify that `start.bat`, `start.ps1`, `python run.py`, and `stop.py` reliably launch and terminate on port `8505` across Windows, macOS, and Linux without port clashes.
-
----
-
-# MANDATORY WORKFLOW POLICY: STRICT BRANCH-FIRST DEVELOPMENT
-
-## Core Directive for All AI Agents and Contributors
-
-To protect the stability of the `main` branch, eliminate code conflicts, and prevent unverified or breaking changes from harming the core application, **all contributors and AI agents MUST adhere strictly to the branch-first development workflow**. 
-
-Direct development on `main` is strictly prohibited. Branching is mandatory to ensure feature isolation, safe rollbacks, and team coordination.
-
-### Required Step-by-Step Workflow:
-
-1. **Pull Latest Changes from All Branches**:
-   At the start of every work cycle or task, ensure your local repository has the full remote state:
-   ```bash
-   git fetch --all
-   git pull
-   ```
-
-2. **Switch to Your Dedicated Feature Branch**:
-   Always switch to your contributor-assigned branch before making any edits or starting new tasks:
-   - Contributor 1: `git checkout contributor-1-ml-foundation`
-   - Contributor 2: `git checkout contributor-2-dynamic-nlp`
-   - Contributor 3: `git checkout contributor-3-nlp-integration`
-
-3. **Develop & Implement Inside Your Branch**:
-   Perform all code edits, model training, feature extraction, and experiments exclusively inside your assigned branch.
-
-4. **Test Thoroughly Before Any Merging**:
-   Run the complete test suite and verify that all unit, regression, and integration tests pass cleanly with zero errors:
-   ```bash
-   pytest tests/ -v
-   ```
-
-5. **Commit Locally in Atomic Steps**:
-   Commit working units of code on your branch with descriptive, standardized commit messages:
-   ```bash
-   git add <modified-files>
-   git commit -m "feat/fix/docs(<scope>): clear description of work done"
-   ```
-
-6. **Merge into `main` Only When Everything Works**:
-   Only after all tasks are completed, tested, and verified to be 100% functional:
-   ```bash
-   git checkout main
-   git merge <your-contributor-branch>
-   pytest tests/ -v  # Final sanity check on main
-   ```
-
-7. **Push to Remote**:
-   Once the merge to `main` is validated and all tests pass without errors, push the updated `main` branch:
-   ```bash
-   git push origin main
-   ```
-
-### Why This Is Mandatory:
-- **Zero Harm to `main`**: Unfinished experiments, broken dependencies, or syntax regressions remain isolated in feature branches and never compromise the live application or other contributors' workflows.
-- **Conflict Prevention**: Concurrent development across Contributors 1, 2, and 3 proceeds independently without git collisions.
 
