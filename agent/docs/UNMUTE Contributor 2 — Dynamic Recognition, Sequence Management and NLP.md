@@ -392,6 +392,110 @@ Coordinate interfaces instead of rewriting another contributor's work.
 
 ---
 
+# IMPORTANT RULES
+
+- Do not redesign the UI.
+- Support both ASL and ISL concurrently; do not discard or switch away from ASL when adding ISL.
+- Do not claim unrestricted ASL or ISL translation.
+- Do not fabricate model metrics.
+- Do not claim signer-independent evaluation unless it actually occurred.
+- Do not leak frames from the same video into train and test sets.
+- Do not replace working code without verifying its role.
+- Do not make the project dependent on an LLM.
+- Do not use NLP to compensate for unreliable recognition.
+- Keep the LSTM architecture understandable for a student viva.
+- Keep static and dynamic recognition conceptually separate.
+- Commit changes to your own branch.
+- Coordinate interfaces with the other contributors.
+- Stop and report at every weekly checkpoint before continuing to the next major stage.
+
+---
+
+# MANDATORY WORKFLOW POLICY: STRICT BRANCH-FIRST DEVELOPMENT
+
+## Core Directive for All AI Agents and Contributors
+
+To protect the stability of the `main` branch, eliminate code conflicts, and prevent unverified or breaking changes from harming the core application, **all contributors and AI agents MUST adhere strictly to the branch-first development workflow**. 
+
+Direct development on `main` is strictly prohibited. Branching is mandatory to ensure feature isolation, safe rollbacks, and team coordination.
+
+### Required Step-by-Step Workflow:
+
+1. **Pull Latest Changes from All Branches**:
+   At the start of every work cycle or task, ensure your local repository has the full remote state:
+   ```bash
+   git fetch --all
+   git pull
+   ```
+
+2. **Switch to Your Dedicated Feature Branch**:
+   Always switch to your contributor-assigned branch before making any edits or starting new tasks:
+   - Contributor 1: `git checkout contributor-1-ml-foundation`
+   - Contributor 2: `git checkout contributor-2-dynamic-nlp`
+   - Contributor 3: `git checkout contributor-3-nlp-integration`
+
+3. **Develop & Implement Inside Your Branch**:
+   Perform all code edits, model training, feature extraction, and experiments exclusively inside your assigned branch.
+
+4. **Test Thoroughly Before Any Merging**:
+   Run the complete test suite and verify that all unit, regression, and integration tests pass cleanly with zero errors:
+   ```bash
+   pytest tests/ -v
+   ```
+
+5. **Commit Locally in Atomic Steps**:
+   Commit working units of code on your branch with descriptive, standardized commit messages:
+   ```bash
+   git add <modified-files>
+   git commit -m "feat/fix/docs(<scope>): clear description of work done"
+   ```
+
+6. **Merge into `main` Only When Everything Works**:
+   Only after all tasks are completed, tested, and verified to be 100% functional:
+   ```bash
+   git checkout main
+   git merge <your-contributor-branch>
+   pytest tests/ -v  # Final sanity check on main
+   ```
+
+7. **Push to Remote**:
+   Once the merge to `main` is validated and all tests pass without errors, push the updated `main` branch:
+   ```bash
+   git push origin main
+   ```
+
+### Why This Is Mandatory:
+- **Zero Harm to `main`**: Unfinished experiments, broken dependencies, or syntax regressions remain isolated in feature branches and never compromise the live application or other contributors' workflows.
+- **Conflict Prevention**: Concurrent development across Contributors 1, 2, and 3 proceeds independently without git collisions.
+
+---
+
+# STARTING PROCEDURE
+
+Before making changes:
+
+1. Inspect the current repository state.
+2. Review `temporal_tracker.py`.
+3. Identify existing feature representations.
+4. Confirm Git branch status.
+5. Create or switch to your contributor branch.
+6. Coordinate expected model/data interfaces with Contributor 1.
+7. Summarize your Week 1 implementation plan.
+8. Then begin the audit and planning process.
+
+At the end of the project, provide a clear implementation report stating:
+
+- What was implemented
+- What was tested
+- What remains incomplete
+- Actual evaluation results
+- Exact files changed
+- Model/checkpoint locations
+- How the backend contributor should integrate the dynamic model
+- How recognized sign sequences are passed into sentence formation
+
+---
+
 # EIGHT-WEEK PROJECT TIMELINE
 
 Your responsibilities should be completed progressively according to the following schedule.
@@ -724,51 +828,6 @@ Before considering your contribution complete, provide:
 
 ---
 
-# IMPORTANT RULES
-
-- Do not redesign the UI.
-- Support both ASL and ISL concurrently; do not discard or switch away from ASL when adding ISL.
-- Do not claim unrestricted ASL or ISL translation.
-- Do not fabricate model metrics.
-- Do not claim signer-independent evaluation unless it actually occurred.
-- Do not leak frames from the same video into train and test sets.
-- Do not replace working code without verifying its role.
-- Do not make the project dependent on an LLM.
-- Do not use NLP to compensate for unreliable recognition.
-- Keep the LSTM architecture understandable for a student viva.
-- Keep static and dynamic recognition conceptually separate.
-- Commit changes to your own branch.
-- Coordinate interfaces with the other contributors.
-- Stop and report at every weekly checkpoint before continuing to the next major stage.
-
----
-
-# STARTING PROCEDURE
-
-Before making changes:
-
-1. Inspect the current repository state.
-2. Review `temporal_tracker.py`.
-3. Identify existing feature representations.
-4. Confirm Git branch status.
-5. Create or switch to your contributor branch.
-6. Coordinate expected model/data interfaces with Contributor 1.
-7. Summarize your Week 1 implementation plan.
-8. Then begin the audit and planning process.
-
-At the end of the project, provide a clear implementation report stating:
-
-- What was implemented
-- What was tested
-- What remains incomplete
-- Actual evaluation results
-- Exact files changed
-- Model/checkpoint locations
-- How the backend contributor should integrate the dynamic model
-- How recognized sign sequences are passed into sentence formation
-
----
-
 # CRITICAL INTEGRATION & MANDATORY ARCHITECTURE UPDATE (WEEK 3)
 
 ## Architectural Alignment with Contributor 1 (ML Foundation & Static Recognition)
@@ -848,63 +907,4 @@ You MUST integrate these additions directly into your upcoming schedule as follo
 ### Week 7 & Week 8 — Dynamic Model Evaluation & Final Delivery
 - **Signer Invariance Benchmarking**: Evaluate dynamic recognition accuracy across diverse signers (slender, broad, and child hands) to verify that sequence models maintain the invariance guarantees established by Contributor 1.
 - **Zero-Port-Clash Launch**: Ensure all scripts run out-of-the-box on dedicated port `8505`.
-
----
-
-# MANDATORY WORKFLOW POLICY: STRICT BRANCH-FIRST DEVELOPMENT
-
-## Core Directive for All AI Agents and Contributors
-
-To protect the stability of the `main` branch, eliminate code conflicts, and prevent unverified or breaking changes from harming the core application, **all contributors and AI agents MUST adhere strictly to the branch-first development workflow**. 
-
-Direct development on `main` is strictly prohibited. Branching is mandatory to ensure feature isolation, safe rollbacks, and team coordination.
-
-### Required Step-by-Step Workflow:
-
-1. **Pull Latest Changes from All Branches**:
-   At the start of every work cycle or task, ensure your local repository has the full remote state:
-   ```bash
-   git fetch --all
-   git pull
-   ```
-
-2. **Switch to Your Dedicated Feature Branch**:
-   Always switch to your contributor-assigned branch before making any edits or starting new tasks:
-   - Contributor 1: `git checkout contributor-1-ml-foundation`
-   - Contributor 2: `git checkout contributor-2-dynamic-nlp`
-   - Contributor 3: `git checkout contributor-3-nlp-integration`
-
-3. **Develop & Implement Inside Your Branch**:
-   Perform all code edits, model training, feature extraction, and experiments exclusively inside your assigned branch.
-
-4. **Test Thoroughly Before Any Merging**:
-   Run the complete test suite and verify that all unit, regression, and integration tests pass cleanly with zero errors:
-   ```bash
-   pytest tests/ -v
-   ```
-
-5. **Commit Locally in Atomic Steps**:
-   Commit working units of code on your branch with descriptive, standardized commit messages:
-   ```bash
-   git add <modified-files>
-   git commit -m "feat/fix/docs(<scope>): clear description of work done"
-   ```
-
-6. **Merge into `main` Only When Everything Works**:
-   Only after all tasks are completed, tested, and verified to be 100% functional:
-   ```bash
-   git checkout main
-   git merge <your-contributor-branch>
-   pytest tests/ -v  # Final sanity check on main
-   ```
-
-7. **Push to Remote**:
-   Once the merge to `main` is validated and all tests pass without errors, push the updated `main` branch:
-   ```bash
-   git push origin main
-   ```
-
-### Why This Is Mandatory:
-- **Zero Harm to `main`**: Unfinished experiments, broken dependencies, or syntax regressions remain isolated in feature branches and never compromise the live application or other contributors' workflows.
-- **Conflict Prevention**: Concurrent development across Contributors 1, 2, and 3 proceeds independently without git collisions.
 

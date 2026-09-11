@@ -307,6 +307,86 @@ Before considering your work complete, provide:
 
 ---
 
+# MANDATORY WORKFLOW POLICY: STRICT BRANCH-FIRST DEVELOPMENT
+
+## Core Directive for All AI Agents and Contributors
+
+To protect the stability of the `main` branch, eliminate code conflicts, and prevent unverified or breaking changes from harming the core application, **all contributors and AI agents MUST adhere strictly to the branch-first development workflow**. 
+
+Direct development on `main` is strictly prohibited. Branching is mandatory to ensure feature isolation, safe rollbacks, and team coordination.
+
+### Required Step-by-Step Workflow:
+
+1. **Pull Latest Changes from All Branches**:
+   At the start of every work cycle or task, ensure your local repository has the full remote state:
+   ```bash
+   git fetch --all
+   git pull
+   ```
+
+2. **Switch to Your Dedicated Feature Branch**:
+   Always switch to your contributor-assigned branch before making any edits or starting new tasks:
+   - Contributor 1: `git checkout contributor-1-ml-foundation`
+   - Contributor 2: `git checkout contributor-2-dynamic-nlp`
+   - Contributor 3: `git checkout contributor-3-nlp-integration`
+
+3. **Develop & Implement Inside Your Branch**:
+   Perform all code edits, model training, feature extraction, and experiments exclusively inside your assigned branch.
+
+4. **Test Thoroughly Before Any Merging**:
+   Run the complete test suite and verify that all unit, regression, and integration tests pass cleanly with zero errors:
+   ```bash
+   pytest tests/ -v
+   ```
+
+5. **Commit Locally in Atomic Steps**:
+   Commit working units of code on your branch with descriptive, standardized commit messages:
+   ```bash
+   git add <modified-files>
+   git commit -m "feat/fix/docs(<scope>): clear description of work done"
+   ```
+
+6. **Merge into `main` Only When Everything Works**:
+   Only after all tasks are completed, tested, and verified to be 100% functional:
+   ```bash
+   git checkout main
+   git merge <your-contributor-branch>
+   pytest tests/ -v  # Final sanity check on main
+   ```
+
+7. **Push to Remote**:
+   Once the merge to `main` is validated and all tests pass without errors, push the updated `main` branch:
+   ```bash
+   git push origin main
+   ```
+
+### Why This Is Mandatory:
+- **Zero Harm to `main`**: Unfinished experiments, broken dependencies, or syntax regressions remain isolated in feature branches and never compromise the live application or other contributors' workflows.
+- **Conflict Prevention**: Concurrent development across Contributors 1, 2, and 3 proceeds independently without git collisions.
+
+---
+
+# STARTING PROCEDURE
+
+Before making changes:
+
+1. Inspect the current repository state.
+2. Identify the current Python environment.
+3. Confirm Git branch status.
+4. Create or switch to your contributor branch.
+5. Summarize your implementation plan.
+6. Then begin the ML foundation work incrementally.
+
+At the end, provide a clear implementation report stating:
+
+- What was implemented
+- What was tested
+- What remains incomplete
+- Exact files changed
+- How another contributor can integrate your trained static model
+
+---
+
 # PROJECT TIMEFRAME & PAUSE-AND-REPORT CHECKPOINTS
 
 Your responsibilities must be organized around the overall **8-week UNMUTE development timeline**.
@@ -620,27 +700,6 @@ The goal is to maintain coordination among all three contributors and prevent du
 
 ---
 
-# STARTING PROCEDURE
-
-Before making changes:
-
-1. Inspect the current repository state.
-2. Identify the current Python environment.
-3. Confirm Git branch status.
-4. Create or switch to your contributor branch.
-5. Summarize your implementation plan.
-6. Then begin the ML foundation work incrementally.
-
-At the end, provide a clear implementation report stating:
-
-- What was implemented
-- What was tested
-- What remains incomplete
-- Exact files changed
-- How another contributor can integrate your trained static model
-
----
-
 # COMPLETED IMPLEMENTATION REPORT (CONTRIBUTOR 1 — ML FOUNDATION & RECOGNITION)
 
 ## Key Milestones Delivered:
@@ -681,63 +740,4 @@ un.py and stop.py to prevent port collisions with 8080, 8000, and 3000.
 ## Handoff Coordination for Contributors 2 & 3:
 - Contributor 2 can consume normalized landmarks for rolling dynamic sequence models in Weeks 3–6.
 - Contributor 3 can connect NLP sentence tokens and Practice Studio verification to the WebGL 3D Inspector on port 8505 in Weeks 3–8.
-
----
-
-# MANDATORY WORKFLOW POLICY: STRICT BRANCH-FIRST DEVELOPMENT
-
-## Core Directive for All AI Agents and Contributors
-
-To protect the stability of the `main` branch, eliminate code conflicts, and prevent unverified or breaking changes from harming the core application, **all contributors and AI agents MUST adhere strictly to the branch-first development workflow**. 
-
-Direct development on `main` is strictly prohibited. Branching is mandatory to ensure feature isolation, safe rollbacks, and team coordination.
-
-### Required Step-by-Step Workflow:
-
-1. **Pull Latest Changes from All Branches**:
-   At the start of every work cycle or task, ensure your local repository has the full remote state:
-   ```bash
-   git fetch --all
-   git pull
-   ```
-
-2. **Switch to Your Dedicated Feature Branch**:
-   Always switch to your contributor-assigned branch before making any edits or starting new tasks:
-   - Contributor 1: `git checkout contributor-1-ml-foundation`
-   - Contributor 2: `git checkout contributor-2-dynamic-nlp`
-   - Contributor 3: `git checkout contributor-3-nlp-integration`
-
-3. **Develop & Implement Inside Your Branch**:
-   Perform all code edits, model training, feature extraction, and experiments exclusively inside your assigned branch.
-
-4. **Test Thoroughly Before Any Merging**:
-   Run the complete test suite and verify that all unit, regression, and integration tests pass cleanly with zero errors:
-   ```bash
-   pytest tests/ -v
-   ```
-
-5. **Commit Locally in Atomic Steps**:
-   Commit working units of code on your branch with descriptive, standardized commit messages:
-   ```bash
-   git add <modified-files>
-   git commit -m "feat/fix/docs(<scope>): clear description of work done"
-   ```
-
-6. **Merge into `main` Only When Everything Works**:
-   Only after all tasks are completed, tested, and verified to be 100% functional:
-   ```bash
-   git checkout main
-   git merge <your-contributor-branch>
-   pytest tests/ -v  # Final sanity check on main
-   ```
-
-7. **Push to Remote**:
-   Once the merge to `main` is validated and all tests pass without errors, push the updated `main` branch:
-   ```bash
-   git push origin main
-   ```
-
-### Why This Is Mandatory:
-- **Zero Harm to `main`**: Unfinished experiments, broken dependencies, or syntax regressions remain isolated in feature branches and never compromise the live application or other contributors' workflows.
-- **Conflict Prevention**: Concurrent development across Contributors 1, 2, and 3 proceeds independently without git collisions.
 
