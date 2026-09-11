@@ -423,50 +423,49 @@ Direct development on `main` is strictly prohibited. Branching is mandatory to e
 - **Each Branch Tracks Its Own History**: Contributor branches (`contributor-1-ml-foundation`, `contributor-2-dynamic-nlp`, `contributor-3-nlp-integration`) track their own independent development history. Do not cross-merge other contributor branches into your branch; if another contributor's branch is empty or not yet active, leave it untouched.
 - **`main` Is the Combined Source of Truth**: The `main` branch serves as the single unified source of truth combining verified, tested contributions from all branches.
 
-### Required Step-by-Step Workflow:
+### Required Cyclic Step-by-Step Workflow:
 
-1. **Pull Latest Changes from All Branches**:
-   At the start of every work cycle or task, ensure your local repository has the full remote state:
+1. **Pull Latest `main` & Sync into Your Branch**:
+   At the start of every work cycle or new task, ensure your branch is based on the latest combined source of truth. Pull `main` from remote and merge it into your contributor feature branch:
    ```bash
-   git fetch --all
-   git pull
+   git checkout main
+   git pull origin main
+   git checkout contributor-2-dynamic-nlp
+   git merge main
    ```
 
-2. **Switch to Your Dedicated Feature Branch**:
-   Always switch to your contributor-assigned branch before making any edits or starting new tasks:
-   - Contributor 1: `git checkout contributor-1-ml-foundation`
-   - Contributor 2: `git checkout contributor-2-dynamic-nlp`
-   - Contributor 3: `git checkout contributor-3-nlp-integration`
+2. **Develop & Implement Inside Your Branch**:
+   Perform all code edits, model training, feature extraction, and experiments exclusively inside your assigned branch. Never edit directly on `main`.
 
-3. **Develop & Implement Inside Your Branch**:
-   Perform all code edits, model training, feature extraction, and experiments exclusively inside your assigned branch.
-
-4. **Test Thoroughly Before Any Merging**:
+3. **Test Thoroughly Before Any Merging**:
    Run the complete test suite and verify that all unit, regression, and integration tests pass cleanly with zero errors:
    ```bash
    pytest tests/ -v
    ```
 
-5. **Commit Locally in Atomic Steps**:
+4. **Commit Locally in Atomic Steps**:
    Commit working units of code on your branch with descriptive, standardized commit messages:
    ```bash
    git add <modified-files>
    git commit -m "feat/fix/docs(<scope>): clear description of work done"
    ```
 
-6. **Merge into `main` Only When Everything Works**:
-   Only after all tasks are completed, tested, and verified to be 100% functional:
+5. **Merge into `main` Only When Everything Works**:
+   Only after all tasks are completed, tested, and verified to be 100% functional, switch to `main` and merge your feature branch:
    ```bash
    git checkout main
-   git merge <your-contributor-branch>
+   git merge contributor-2-dynamic-nlp
    pytest tests/ -v  # Final sanity check on main
    ```
 
-7. **Push to Remote**:
+6. **Push `main` to Remote**:
    Once the merge to `main` is validated and all tests pass without errors, push the updated `main` branch:
    ```bash
    git push origin main
    ```
+
+7. **Repeat Cycle for Every New Task**:
+   When beginning the next task, repeat this exact loop: pull latest `main`, merge `main` into your feature branch, work, test, commit, merge to `main`, and push.
 
 ### Why This Is Mandatory:
 - **Independent History Isolation**: Each contributor branch retains clean provenance and atomic responsibility without cross-pollinating unverified code.
