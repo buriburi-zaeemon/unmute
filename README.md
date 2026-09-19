@@ -158,8 +158,10 @@ unmute/
 │   │   └── dataset.py        # PyTorch StaticSignDataset and get_dataloaders() factory
 │   ├── models/               # PyTorch neural network architectures
 │   │   └── static_mlp.py     # StaticASL_MLP (109 dims) and StaticISL_MLP (228 dims)
-│   ├── training/             # Training, validation & evaluation pipelines
-│   │   └── train_static.py   # Modular PyTorch training CLI with checkpointing
+│   ├── training/             # Training & optimization pipelines
+│   │   └── train_static.py   # Modular PyTorch training CLI with early stopping and checkpointing
+│   ├── evaluation/           # Model evaluation and metric computation suite
+│   │   └── evaluate_static.py# Classification metrics and confusion matrix generator
 │   ├── legacy_rf_audit.py    # Audit suite for legacy Random Forest model
 │   └── dataset_recommendation.md # Dataset strategy and anatomical sign catalogs
 ├── static/                   # Frontend single-page application
@@ -170,11 +172,17 @@ unmute/
 │   ├── asl_rf_model.joblib   # Legacy Random Forest baseline model (109 features)
 │   ├── asl_static_mlp.pt     # Trained PyTorch ASL Static MLP checkpoint
 │   └── isl_static_mlp.pt     # Trained PyTorch ISL Static MLP checkpoint
+├── reports/                  # Generated model evaluation reports and confusion matrices
+│   ├── asl_evaluation_report.json # ASL classification metrics breakdown
+│   ├── asl_confusion_matrix.png   # High-resolution ASL confusion matrix heatmap
+│   ├── isl_evaluation_report.json # ISL classification metrics breakdown
+│   └── isl_confusion_matrix.png   # High-resolution ISL confusion matrix heatmap
 ├── tests/                    # Automated pytest test suite
 │   ├── test_backend.py       # REST and WebSocket endpoint integration tests
 │   ├── test_sign_engine.py   # Landmark, feature engineering, and classifier tests
 │   ├── test_ml_data.py       # Label mappings, dual features, zero-leakage splits tests
-│   └── test_static_mlp.py    # PyTorch Static MLP architectures and training tests
+│   ├── test_static_mlp.py    # PyTorch Static MLP architectures and training tests
+│   └── test_evaluation.py    # Evaluation metrics, confusion matrix, and schema tests
 ├── agent/                    # Contributor documentation, master plans, and audit reports
 │   └── docs/                 # Contributor prompts, weekly roadmaps, and audit files
 ├── architecture.puml         # Authoritative PlantUML system architecture diagram
@@ -207,14 +215,27 @@ python ml/data/prepare_dataset.py --language ISL --output-dir data
 ```
 
 ### Train Static Recognition Models
-To train the PyTorch Multi-Layer Perceptrons with learning rate scheduling and best validation checkpointing:
+To train the PyTorch Multi-Layer Perceptrons with learning rate scheduling, early stopping, and best validation checkpointing:
 ```bash
 # Train Static ASL MLP (saves models/asl_static_mlp.pt)
-python -m ml.training.train_static --language ASL --epochs 25 --batch-size 32
+python -m ml.training.train_static --language ASL --epochs 30 --patience 7
 
 # Train Static ISL MLP (saves models/isl_static_mlp.pt)
-python -m ml.training.train_static --language ISL --epochs 25 --batch-size 32
+python -m ml.training.train_static --language ISL --epochs 30 --patience 7
 ```
+
+### Evaluate Static Recognition Models
+To run standalone evaluation on held-out test splits, compute classification metrics, and export high-resolution confusion matrix heatmaps:
+```bash
+# Evaluate ASL Model on Held-Out Test Split
+python -m ml.evaluation.evaluate_static --language ASL --output-dir reports
+
+# Evaluate ISL Model on Held-Out Test Split
+python -m ml.evaluation.evaluate_static --language ISL --output-dir reports
+```
+Generated reports are stored in `reports/`:
+- `reports/asl_evaluation_report.json` and `reports/asl_confusion_matrix.png`
+- `reports/isl_evaluation_report.json` and `reports/isl_confusion_matrix.png`
 
 ---
 

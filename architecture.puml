@@ -118,7 +118,14 @@ package "Machine Learning Foundation (ml/)" {
   component "Static ASL Recognition MLP (ml/models/static_mlp.py)" as MLModelASL <<Model>>
   component "Static ISL Recognition MLP (ml/models/static_mlp.py)" as MLModelISL <<Model>>
   component "Dynamic Sign Sequence LSTM (PyTorch)" as MLModelLSTM <<Model>>
-  component "Training, Validation & Evaluation Suite (ml/training/)" as MLTrainEval <<Engine>>
+  component "Training & Optimization Suite (ml/training/train_static.py)" as MLTrainEval <<Engine>>
+  component "Static Model Evaluation Engine (ml/evaluation/evaluate_static.py)" as MLEvalEngine <<Engine>>
+  note bottom of MLEvalEngine
+    Evaluation Engine:
+    - Classification Metrics (Accuracy, Macro/Weighted F1, Prec, Rec)
+    - High-Resolution Confusion Matrix Heatmaps (Seaborn/Matplotlib)
+    - Full Metric JSON Serialization & Reporting
+  end note
 }
 
 ' ==========================================================
@@ -146,6 +153,11 @@ package "File Storage & Project Assets" {
 
   folder "Custom Gestures" as StorageCustom {
     [custom_gestures.json]
+  }
+
+  folder "Evaluation Reports & Visualizations (reports/)" as StorageReports {
+    [asl_evaluation_report.json, isl_evaluation_report.json]
+    [asl_confusion_matrix.png, isl_confusion_matrix.png]
   }
 
   folder "Client Static Web Assets (static/)" as StorageStatic {
@@ -246,5 +258,11 @@ MLModelLSTM ..[#004D40]..> StorageModels : Persists dynamic_lstm.pt Checkpoint
 
 StorageModels ..[#3E2723]..> ASLClass : Loads Trained Static MLP Models for Live Inference
 StorageModels ..[#212121]..> DynamicLSTM : Loads Trained LSTM Model for Live Inference
+
+StorageModels ..[#C51162]..> MLEvalEngine : Loads Model Weights for Performance Validation
+StorageData -[#AA00FF]-> MLEvalEngine : Supplies Held-Out Test Splits (.npz)
+MLEvalEngine -[#6200EA]-> StorageReports : Exports Evaluation Metrics JSON & Heatmap PNGs
+MLLabels -[#2962FF]-> MLEvalEngine : Supplies Canonical Target Class Names
+MLDataset -[#00B8D4]-> MLEvalEngine : Supplies Test Set PyTorch DataLoader
 
 @enduml
