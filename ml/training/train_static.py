@@ -95,6 +95,7 @@ def train_static_model(
     batch_size: int = 32,
     lr: float = 1e-3,
     weight_decay: float = 1e-4,
+    patience: int = 7,
     device: Optional[torch.device] = None,
 ) -> Dict[str, Any]:
     """
@@ -145,6 +146,7 @@ def train_static_model(
 
     start_time = time.time()
     best_val_loss = float("inf")
+    epochs_no_improve = 0
 
     for epoch in range(1, epochs + 1):
         t_loss, t_acc = train_one_epoch(model, loaders["train"], criterion, optimizer, device)
@@ -159,6 +161,7 @@ def train_static_model(
         is_best = v_loss < best_val_loss
         if is_best:
             best_val_loss = v_loss
+            epochs_no_improve = 0
             history["best_epoch"] = epoch
             history["best_val_loss"] = round(v_loss, 4)
             history["best_val_acc"] = round(v_acc, 4)
@@ -172,6 +175,8 @@ def train_static_model(
                 "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
             }
             model.save_checkpoint(checkpoint_file, metadata=metadata)
+        else:
+            epochs_no_improve += 1
 
         print(
             f"Epoch [{epoch:02d}/{epochs:02d}] "
@@ -180,8 +185,18 @@ def train_static_model(
             f"{'* (Best)' if is_best else ''}"
         )
 
+        if epochs_no_improve >= patience:
+            print(f"\n[Early Stopping] Validation loss did not improve for {patience} consecutive epochs. Stopping at epoch {epoch}.")
+            break
+
     total_time = time.time() - start_time
     history["training_time_seconds"] = round(total_time, 2)
+
+    # Reload best checkpoint for test split evaluation
+    if os.path.exists(checkpoint_file):
+        best_ckpt = torch.load(checkpoint_file, map_location=device)
+        model.load_state_dict(best_ckpt["state_dict"])
+        print(f"Reloaded best checkpoint from epoch {history['best_epoch']} for held-out test evaluation.")
 
     # Final evaluation on held-out Test split
     test_loss, test_acc = evaluate_epoch(model, loaders["test"], criterion, device)
@@ -209,6 +224,7 @@ if __name__ == "__main__":
     parser.add_argument("--epochs", type=int, default=20, help="Number of training epochs")
     parser.add_argument("--batch-size", type=int, default=32, help="Batch size for training")
     parser.add_argument("--lr", type=float, default=1e-3, help="Initial learning rate")
+    parser.add_argument("--patience", type=int, default=7, help="Early stopping patience in epochs")
     args = parser.parse_args()
 
     lang = SignLanguage.ASL if args.language == "ASL" else SignLanguage.ISL
@@ -219,4 +235,5 @@ if __name__ == "__main__":
         epochs=args.epochs,
         batch_size=args.batch_size,
         lr=args.lr,
+        patience=args.patience,
     )
