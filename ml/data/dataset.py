@@ -5,7 +5,7 @@ Supports both ASL (109-dim features) and ISL (228-dim features) static sign reco
 
 import os
 import sys
-from typing import Tuple, Dict, Optional, Callable, List
+from typing import Tuple, Dict, Optional, Callable, List, Union
 import numpy as np
 import torch
 from torch.utils.data import Dataset, DataLoader
@@ -128,3 +128,39 @@ def get_dataloaders(
     }
 
     return loaders
+
+
+def compute_class_weights(
+    labels: Union[torch.Tensor, np.ndarray, StaticSignDataset],
+    num_classes: Optional[int] = None,
+    smoothing: float = 0.15,
+) -> torch.Tensor:
+    """
+    Computes smoothed inverse-frequency class weights for CrossEntropyLoss.
+    Helps mitigate class imbalances while bounding extreme weights.
+    Normalized such that mean(weights) == 1.0.
+    """
+    if isinstance(labels, StaticSignDataset):
+        lbls = labels.labels
+        if num_classes is None:
+            num_classes = labels.num_classes
+    elif isinstance(labels, np.ndarray):
+        lbls = torch.from_numpy(labels).long()
+    else:
+        lbls = labels.long()
+
+    if num_classes is None:
+        num_classes = int(lbls.max().item() + 1) if len(lbls) > 0 else 1
+
+    counts = torch.zeros(num_classes, dtype=torch.float32)
+    for c in range(num_classes):
+        counts[c] = (lbls == c).sum().item()
+
+    total_samples = len(lbls)
+    smooth_factor = smoothing * (total_samples / max(1, num_classes))
+    weights = total_samples / (num_classes * (counts + smooth_factor) + 1e-6)
+
+    # Normalize weights so mean is 1.0 and clamp to avoid extreme gradient spikes
+    weights = weights / (weights.mean() + 1e-6)
+    weights = torch.clamp(weights, min=0.25, max=4.0)
+    return weights
