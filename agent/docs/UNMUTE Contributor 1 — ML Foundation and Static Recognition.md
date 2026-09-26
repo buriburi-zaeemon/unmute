@@ -413,10 +413,18 @@ Do not automatically continue through all development phases without reporting p
 
 ---
 
-## WEEK 1 — Environment, Repository Audit & Dataset Decision
+## WEEK 1 — Environment, Repository Audit & Dataset Decision (Sep 02 – Sep 06, 2026)
+
+### Granular Sub-Tasks (Delivered & Verified based on Commit History):
+- **Sub-task 1.1 — Workspace & Environment Configuration** (`7e1d523`, Sep 02): Configure VS Code workspace settings for python `.venv` auto-selection.
+- **Sub-task 1.2 — ASL Classifier Rule Refinement** (`c22a80a`, Sep 03): Refine ASL classifier rules for 100% accuracy on letters and phrases.
+- **Sub-task 1.3 — Light/Dark UI Theme Architecture & Persistence** (`e34ff7e` – `0e9e989`, Sep 03): Implement CSS architecture, theme toggle button, toggle logic, and localStorage persistence.
+- **Sub-task 1.4 — System Architecture Diagrams & Calibration** (`57466d5` – `dd1d220`, Sep 03): Overhaul architecture.puml to reflect UI Theme Manager and 100% codebase accuracy.
+- **Sub-task 1.5 — Python 3.11.9 Virtual Environment Setup & PyTorch Bootstrap** (`84cf7e2`, `e12dfa3`, Sep 06): Update `.gitignore`, bootstrap clean Python 3.11.9 environment with PyTorch and ML dependencies in `requirements.txt`.
+- **Sub-task 1.6 — Legacy Random Forest Model Audit & Sign Catalog Research** (`1fbd6d1`, Sep 06): Execute legacy Random Forest audit script (`ml/legacy_rf_audit.py`), research ASL datasets, and establish sign definition catalog (`ml/dataset_recommendation.md`).
+- **Sub-task 1.7 — Server Improvements & Launcher Updates** (`464638d`, `d123431`, Sep 06): Improve server scripts, update launcher, and remove agent directory from gitignore.
 
 Focus on:
-
 - Inspecting the current repository state.
 - Identifying the existing Python environment and dependency issues.
 - Creating or planning a PyTorch-compatible environment.
@@ -428,7 +436,6 @@ Focus on:
 ### ⏸ PAUSE-AND-REPORT CHECKPOINT — END OF WEEK 1
 
 Before beginning Week 2, stop and report:
-
 - Current repository understanding.
 - Current Python version and environment status.
 - Recommended PyTorch-compatible setup.
@@ -442,10 +449,18 @@ Do not make major irreversible architectural decisions without reporting them fi
 
 ---
 
-## WEEK 2 — Dataset Preparation & Feature Pipeline
+## WEEK 2 — Dataset Preparation & Feature Pipeline (Sep 07 – Sep 08, 2026)
+
+### Granular Sub-Tasks (Delivered & Verified based on Commit History):
+- **Sub-task 2.1 — Dual ASL + ISL Strategy Expansion** (`f3b3eed`, Sep 07): Expand architecture, README, and dataset recommendation to Dual ASL + ISL.
+- **Sub-task 2.2 — Authoritative Label Mappings for ASL & ISL** (`a111219`, Sep 07): Implement authoritative label mappings for ASL (41 classes) and ISL (44 classes) in `ml/data/labels.py`.
+- **Sub-task 2.3 — Bimanual ISL Feature Engineering (228 Dims)** (`98e1e5e`, Sep 07): Implement `DualHandFeatures` and `extract_dual_features` in `sign_engine/feature_engineering.py`.
+- **Sub-task 2.4 — Reproducible Data Preparation Pipeline & Zero-Leakage Splitting** (`89cec28`, Sep 07): Implement `ml/data/prepare_dataset.py`, `ml/data/dataset.py`, and automated tests in `tests/test_ml_data.py`.
+- **Sub-task 2.5 — Architecture Diagrams & Documentation Synchronization** (`e1451c8` – `3e450d5`, Sep 07): Update architecture.puml and README.md with 228-dim ISL feature vectors, componentStyle rectangle, and distinct unique hex color code per arrow.
+- **Sub-task 2.6 — Contributor Prompts Alignment for Indian Sign Language** (`e5f7dd3`, Sep 08): Add Indian Sign Language procedures along with ASL across Weeks 3-8 for all 3 contributors.
+- **Sub-task 2.7 — Reproducible Dataset Generation & NPZ Archive Export** (`19765fa`, Sep 10): Generate and export reproducible zero-leakage ASL (`data/asl_*.npz`) and ISL (`data/isl_*.npz`) dataset archives.
 
 Focus on:
-
 - Obtaining or preparing the selected dataset.
 - Understanding its directory structure and labels.
 - Implementing reproducible data preparation.
@@ -486,7 +501,6 @@ Incorporate Indian Sign Language (ISL) alongside American Sign Language (ASL) in
 ### ⏸ PAUSE-AND-REPORT CHECKPOINT — END OF WEEK 2
 
 Before beginning Week 3, stop and report:
-
 - Dataset actually selected and available locally.
 - Number of usable classes currently prepared.
 - Number of usable samples per class where available.
@@ -501,14 +515,20 @@ Do not proceed with model training until the dataset pipeline is understandable 
 
 ---
 
-## WEEK 3 — Static MLP Implementation
+## WEEK 3 — Static MLP Implementation & Universal Invariant Engine (Sep 10 – Sep 11, 2026)
+
+### Granular Sub-Tasks (Delivered & Verified based on Commit History):
+- **Sub-task 3.1 — Core Classifier Overhaul & Disambiguation Hierarchy** (`1bcb3c4`, `183b8e7`, Sep 10): Restructure `sign_engine/asl_classifier.py` into Finger-Extension Decision Hierarchy; add `SIGN_ALIASES` in `static/app.js`.
+- **Sub-task 3.2 — Static MLP Architectures & PyTorch Training Pipelines** (`1d63100`, `34d3bb1`, Sep 10): Implement `StaticASL_MLP` and `StaticISL_MLP` in `ml/models/static_mlp.py`, training pipeline `ml/training/train_static.py`, checkpointing, and `tests/test_static_mlp.py`.
+- **Sub-task 3.3 — Universal Self-Phalange Bone Ratio Extension** (`4f069a0`, Sep 10): Implement palm-size invariant Self-Phalange Bone Length Normalization and collinearity in `sign_engine/asl_classifier.py`.
+- **Sub-task 3.4 — Interactive Three.js WebGL 3D Hand Visualizer & OrbitControls** (`2734a15`, `95bc990`, `df2272b`, `f4b114a`, Sep 10): Implement real Three.js WebGL 3D hand visualizer with OrbitControls, camera presets, unique finger colors, and hardcode port 8505.
+- **Sub-task 3.5 — Multimodal UI & System Documentation Synchronization** (`3d62bec`, `10f686d`, `13a067d`, `74a26f8`, Sep 10): Synchronize README, architecture.puml, and agent contributor docs with 3D guide, invariant engine, and port 8505.
+- **Sub-task 3.6 — Mandatory Branch-First Git Workflow** (`942a3ab` – `9d15fa9`, Sep 11): Mandate strict branch-first git workflow across all contributor docs.
 
 Focus on:
 
 ### 🚨 URGENT PRIORITY WORK — Core Sign Classifier Overhaul & Disambiguation Hierarchy
-
 This task must be treated as your most important and urgent work in Week 3, providing the foundational accurate classification layer for Contributors 2 and 3 and the entire application:
-
 - **Restructure Core Classifier (`sign_engine/asl_classifier.py`)**:
   - Overhaul `ASLClassifier` into a clean, robust **Finger-Extension Decision Hierarchy** (grouping by discrete finger extension states: 0, 1, 2, 3, 4 fingers extended, pinch/curled shapes, and fist families).
   - Eliminate widespread sign collisions across the entire application:
@@ -535,7 +555,6 @@ Keep the architectures simple and explainable.
 ### ⏸ PAUSE-AND-REPORT CHECKPOINT — END OF WEEK 3
 
 Before beginning Week 4, stop and report:
-
 - Core sign classifier overhaul status and regression test results across all 26 letters and static phrases.
 - Final MLP architectures (ASL and ISL).
 - Input feature dimensionalities (109-dim ASL, 228-dim ISL).
@@ -550,10 +569,17 @@ Before beginning Week 4, stop and report:
 
 ---
 
-## WEEK 4 — Training & Initial Evaluation
+## WEEK 4 — Training & Initial Evaluation (Sep 12 – Sep 19, 2026)
+
+### Granular Sub-Tasks (Delivered & Verified based on Commit History):
+- **Sub-task 4.1 — Static Model Evaluation Pipeline & Metric Calculations** (`833bbaf`, Sep 13): Implement comprehensive static model evaluation pipeline in `ml/evaluation/evaluate_static.py`.
+- **Sub-task 4.2 — ASL Static MLP Training & Early Stopping Optimization** (`e839d62`, Sep 15): Train and optimize ASL static MLP model checkpoint with early stopping saving to `models/asl_static_mlp.pt`.
+- **Sub-task 4.3 — ISL Bimanual Static MLP Training & Optimization** (`beb9d74`, Sep 16): Train and optimize ISL bimanual static MLP model checkpoint with early stopping saving to `models/isl_static_mlp.pt`.
+- **Sub-task 4.4 — Comprehensive Evaluation Reports & Confusion Matrix Generation** (`245f4af`, Sep 17): Generate test split evaluation reports and confusion matrices for ASL and ISL in `reports/`.
+- **Sub-task 4.5 — Automated Evaluation Test Suite & Week 4 Checkpoint** (`c4b24ee`, Sep 18): Implement evaluation test suite in `tests/test_evaluation.py` and document Week 4 checkpoint report.
+- **Sub-task 4.6 — Deliverable Merge & Architecture Diagram Synchronization** (`23cbbc4`, `7fed519`, Sep 19): Incorporate Week 4 static model deliverables into main; update `architecture.puml` and `README.md`.
 
 Focus on:
-
 - Running initial training experiments for both ASL and ISL models.
 - Monitoring training and validation loss for both models.
 - Checking for overfitting on both datasets.
@@ -571,7 +597,6 @@ Do not optimize endlessly for accuracy. First establish reliable baselines for b
 ### ⏸ PAUSE-AND-REPORT CHECKPOINT — END OF WEEK 4
 
 Before beginning Week 5, stop and report:
-
 - Whether training completed successfully for both ASL and ISL.
 - Actual metrics obtained for both ASL and ISL models.
 - Training versus validation behavior.
@@ -585,10 +610,17 @@ Never report estimated, theoretical, or fabricated accuracy values.
 
 ---
 
-## WEEK 5 — Model Improvement & Robustness
+## WEEK 5 — Model Improvement & Robustness (Sep 20 – Sep 26, 2026)
+
+### Granular Sub-Tasks (Delivered & Verified based on Commit History):
+- **Sub-task 5.1 — Training Data Augmentation & Class Imbalance Weighting** (`9afa15f`, Sep 21): Implement `ml/data/augmentations.py` and smoothed inverse-frequency weighting in `ml/data/dataset.py`.
+- **Sub-task 5.2 — Residual Dense Skip Blocks & Layer Stabilization** (`ed84a0f`, Sep 22): Add `ResidualBlock` dense skip options and batch normalization to `ml/models/static_mlp.py`.
+- **Sub-task 5.3 — Improved Model Retraining & Checkpointing** (`3ad2124`, Sep 23): Retrain improved static models with class weighting and data augmentation saving to `models/asl_static_mlp.pt` and `models/isl_static_mlp.pt`.
+- **Sub-task 5.4 — Robustness Testing & Legacy Random Forest Benchmark** (`680a700`, Sep 24): Implement comprehensive robustness testing and baseline comparison harness in `ml/evaluation/robustness_test.py` exporting `reports/model_comparison_report.json`.
+- **Sub-task 5.5 — Automated Robustness Regression Suite & Week 5 Checkpoint** (`23c12eb`, Sep 25): Implement `tests/test_robustness.py` (55/55 tests passing) and document Week 5 checkpoint report.
+- **Sub-task 5.6 — Deliverable Merge & System Architecture Synchronization** (`9e840e3`, `65e62c2`, Sep 26): Incorporate Week 5 deliverables into main; update `architecture.puml` (74 unique arrow colors) and `README.md`.
 
 Focus on:
-
 - Investigating weak classes in both ASL and ISL (including bimanual contact and occlusion patterns in ISL).
 - Improving preprocessing where justified for 109-dim single-hand and 228-dim dual-hand pipelines.
 - Adjusting the MLP architectures only if necessary.
@@ -601,7 +633,6 @@ Avoid unnecessary complexity.
 ### ⏸ PAUSE-AND-REPORT CHECKPOINT — END OF WEEK 5
 
 Stop and report:
-
 - Baseline versus improved model comparison for both ASL and ISL.
 - Any preprocessing changes.
 - Any architecture changes.
