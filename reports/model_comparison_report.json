@@ -1,0 +1,96 @@
+{
+  "timestamp": "2026-09-27 00:18:57",
+  "asl_noise_robustness": {
+    "sigma_0.00": {
+      "sigma": 0.0,
+      "accuracy": 0.016233766233766232,
+      "macro_f1": 0.01117083453711564,
+      "weighted_f1": 0.011304934763102984
+    },
+    "sigma_0.01": {
+      "sigma": 0.01,
+      "accuracy": 0.016233766233766232,
+      "macro_f1": 0.013588141978980766,
+      "weighted_f1": 0.013473366064829479
+    },
+    "sigma_0.02": {
+      "sigma": 0.02,
+      "accuracy": 0.00974025974025974,
+      "macro_f1": 0.008218451749734889,
+      "weighted_f1": 0.008752117447769622
+    },
+    "sigma_0.05": {
+      "sigma": 0.05,
+      "accuracy": 0.012987012987012988,
+      "macro_f1": 0.009988385598141695,
+      "weighted_f1": 0.010312306740878168
+    },
+    "sigma_0.10": {
+      "sigma": 0.1,
+      "accuracy": 0.00974025974025974,
+      "macro_f1": 0.006310762408323384,
+      "weighted_f1": 0.00647080192534738
+    }
+  },
+  "isl_noise_robustness": {
+    "sigma_0.00": {
+      "sigma": 0.0,
+      "accuracy": 0.051515151515151514,
+      "macro_f1": 0.024796167630174247,
+      "weighted_f1": 0.024528515247186716
+    },
+    "sigma_0.01": {
+      "sigma": 0.01,
+      "accuracy": 0.05454545454545454,
+      "macro_f1": 0.02782372954453953,
+      "weighted_f1": 0.02733864838266537
+    },
+    "sigma_0.02": {
+      "sigma": 0.02,
+      "accuracy": 0.05454545454545454,
+      "macro_f1": 0.028577056385200857,
+      "weighted_f1": 0.028060186404377716
+    },
+    "sigma_0.05": {
+      "sigma": 0.05,
+      "accuracy": 0.05454545454545454,
+      "macro_f1": 0.029304330936521416,
+      "weighted_f1": 0.028706056967436326
+    },
+    "sigma_0.10": {
+      "sigma": 0.1,
+      "accuracy": 0.05757575757575758,
+      "macro_f1": 0.029708231417341892,
+      "weighted_f1": 0.02929413778385562
+    }
+  },
+  "isl_single_hand_fallback": {
+    "full_dual_hand": {
+      "accuracy": 0.051515151515151514,
+      "macro_f1": 0.024796167630174247
+    },
+    "single_hand_fallback": {
+      "accuracy": 0.024242424242424242,
+      "macro_f1": 0.0031338399245659774
+    },
+    "relative_retention": 0.4706
+  },
+  "baseline_comparison": {
+    "pytorch_asl_mlp": {
+      "model_type": "StaticASL_MLP (PyTorch)",
+      "parameter_count": 133417,
+      "latency_ms_per_sample": 0.006,
+      "accuracy": 0.016233766233766232,
+      "macro_f1": 0.01117083453711564,
+      "weighted_f1": 0.011304934763102984
+    },
+    "legacy_random_forest": {
+      "model_type": "RandomForestClassifier (Scikit-Learn Baseline)",
+      "file_size_mb": 18.27,
+      "latency_ms_per_sample": 0.057,
+      "accuracy": 0.01948051948051948,
+      "macro_f1": 0.001009251471825063,
+      "weighted_f1": 0.0009404388714733543
+    }
+  }
+}

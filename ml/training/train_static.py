@@ -20,7 +20,8 @@ if REPO_ROOT not in sys.path:
     sys.path.insert(0, REPO_ROOT)
 
 from ml.data.labels import SignLanguage, get_num_classes, get_classes
-from ml.data.dataset import get_dataloaders
+from ml.data.dataset import get_dataloaders, compute_class_weights
+from ml.data.augmentations import get_default_train_transform
 from ml.models.static_mlp import StaticASL_MLP, StaticISL_MLP, create_static_model
 
 
@@ -96,6 +97,9 @@ def train_static_model(
     lr: float = 1e-3,
     weight_decay: float = 1e-4,
     patience: int = 7,
+    use_residual: bool = False,
+    augment: bool = False,
+    weighted_loss: bool = False,
     device: Optional[torch.device] = None,
 ) -> Dict[str, Any]:
     """
@@ -118,16 +122,35 @@ def train_static_model(
     print(f"Epochs:           {epochs}")
     print(f"Batch Size:       {batch_size}")
     print(f"Learning Rate:    {lr}")
+    print(f"Residual Block:   {use_residual}")
+    print(f"Data Augment:     {augment}")
+    print(f"Weighted Loss:    {weighted_loss}")
     print(f"Checkpoint Path:  {checkpoint_file}")
 
+    # Configure training transforms
+    train_transform = get_default_train_transform() if augment else None
+
     # Load zero-leakage DataLoaders
-    loaders = get_dataloaders(data_dir=data_dir, language=language, batch_size=batch_size)
+    loaders = get_dataloaders(
+        data_dir=data_dir,
+        language=language,
+        batch_size=batch_size,
+        train_transform=train_transform,
+    )
     num_classes = get_num_classes(language)
     classes = get_classes(language)
 
     # Initialize model
-    model = create_static_model(language).to(device)
-    criterion = nn.CrossEntropyLoss()
+    model = create_static_model(language, use_residual=use_residual).to(device)
+
+    # Loss function with optional inverse-frequency class weighting
+    if weighted_loss:
+        class_weights = compute_class_weights(loaders["train"].dataset, num_classes=num_classes).to(device)
+        criterion = nn.CrossEntropyLoss(weight=class_weights)
+        print("Enabled smoothed inverse-frequency class weighting.")
+    else:
+        criterion = nn.CrossEntropyLoss()
+
     optimizer = optim.AdamW(model.parameters(), lr=lr, weight_decay=weight_decay)
     scheduler = ReduceLROnPlateau(optimizer, mode="min", factor=0.5, patience=3)
 
@@ -225,6 +248,9 @@ if __name__ == "__main__":
     parser.add_argument("--batch-size", type=int, default=32, help="Batch size for training")
     parser.add_argument("--lr", type=float, default=1e-3, help="Initial learning rate")
     parser.add_argument("--patience", type=int, default=7, help="Early stopping patience in epochs")
+    parser.add_argument("--use-residual", action="store_true", help="Enable residual dense blocks")
+    parser.add_argument("--augment", action="store_true", help="Enable on-the-fly training data augmentation")
+    parser.add_argument("--weighted-loss", action="store_true", help="Enable smoothed inverse-frequency class weighting")
     args = parser.parse_args()
 
     lang = SignLanguage.ASL if args.language == "ASL" else SignLanguage.ISL
@@ -236,4 +262,7 @@ if __name__ == "__main__":
         batch_size=args.batch_size,
         lr=args.lr,
         patience=args.patience,
+        use_residual=args.use_residual,
+        augment=args.augment,
+        weighted_loss=args.weighted_loss,
     )
