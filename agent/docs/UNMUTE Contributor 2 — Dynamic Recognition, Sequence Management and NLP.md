@@ -520,12 +520,18 @@ Your responsibilities should be completed progressively according to the followi
 
 ---
 
-## WEEK 1 — Audit and Dynamic Recognition Planning
+## WEEK 1 — Audit and Dynamic Recognition Planning (Sep 02 – Sep 06, 2026)
 
 Focus on understanding the current dynamic system.
 
-Tasks:
+### Granular Sub-Tasks:
+- **Sub-task 1.1 — Dynamic Recognition Codebase Audit**: Inspect `sign_engine/temporal_tracker.py`, evaluate rolling-window buffer (36 frames), and document heuristic tracking methods (`detect_wave`, `detect_nod`, `detect_thank_you`).
+- **Sub-task 1.2 — Dynamic Signs Catalog & Vocabulary Definition**: Document currently supported gestures (`HELLO`, `YES`, `NO`, `THANK YOU`) and propose controlled dynamic vocabulary for ASL and ISL.
+- **Sub-task 1.3 — Sequence Buffer Representation Design**: Formulate temporal sequence tensor specifications (timesteps $T=30$, features $D=109$ for ASL, $D=228$ for ISL).
+- **Sub-task 1.4 — Model Architecture & LSTM Training Strategy**: Plan two-layer PyTorch LSTM sequence classification model with bidirectional context and dropout.
+- **Sub-task 1.5 — Contributor 1 Alignment & Dataset Interface**: Coordinate with Contributor 1 regarding shared invariant landmark normalizations and dataset directory layouts.
 
+Tasks:
 1. Inspect `temporal_tracker.py`.
 2. Document all currently supported dynamic signs.
 3. Understand the current rolling-window logic.
@@ -538,7 +544,6 @@ Tasks:
 ### PAUSE-AND-REPORT CHECKPOINT — END OF WEEK 1
 
 Stop implementation and provide a report containing:
-
 - Current dynamic recognition implementation
 - Supported dynamic signs
 - Existing heuristic logic
@@ -552,12 +557,18 @@ Do not proceed to Week 2 until this checkpoint has been reviewed or acknowledged
 
 ---
 
-## WEEK 2 — Temporal Data Pipeline
+## WEEK 2 — Temporal Data Pipeline (Sep 07 – Sep 08, 2026)
 
 Build the dataset-processing pipeline.
 
-Tasks:
+### Granular Sub-Tasks:
+- **Sub-task 2.1 — Dynamic Sample Format & Landmark Sequence Extraction**: Define structured sample schema (`landmarks`, `labels`, `sequence_length`, `fps`, `language_mode`).
+- **Sub-task 2.2 — Dual-Hand Temporal Sequences for ISL**: Support bimanual sequence frames (228 dims) capturing inter-hand distance and relative wrist motion trajectories.
+- **Sub-task 2.3 — Sliding Window & Padding/Truncation Pipeline**: Implement temporal sequence normalization to fixed length ($T=30$ frames) using linear interpolation and zero-padding.
+- **Sub-task 2.4 — Zero-Leakage Dynamic Dataset Splitting**: Implement video-level stratified splitting (70% train / 15% val / 15% test) preventing contiguous frame leakage.
+- **Sub-task 2.5 — PyTorch Sequence Dataset & DataLoader**: Implement PyTorch `Dataset` and `DataLoader` abstractions yielding batch tensors of shape `(B, T, D)`.
 
+Tasks:
 1. Define the dynamic sample format.
 2. Implement landmark-sequence extraction.
 3. Reuse compatible feature engineering where appropriate.
@@ -586,7 +597,6 @@ Incorporate Indian Sign Language (ISL) alongside American Sign Language (ASL) in
 ### PAUSE-AND-REPORT CHECKPOINT — END OF WEEK 2
 
 Report:
-
 - Dataset/sample format
 - Feature dimensionality
 - Sequence representation
@@ -602,9 +612,15 @@ Do not proceed until the pipeline is reviewed.
 
 ---
 
-## WEEK 3 — Dynamic Dataset Preparation and Baseline
+## WEEK 3 — Dynamic Dataset Preparation and Baseline (Sep 10 – Sep 11, 2026)
 
 Prepare actual dynamic training data for both ASL and ISL.
+
+### Granular Sub-Tasks:
+- **Sub-task 3.1 — Core Classifier Overhaul Integration & Temporal Boundary Guarding**: Synchronize `TemporalGestureTracker` with Contributor 1's finger-extension decision hierarchy to prevent static pose collisions (`YES` vs fist family `A`/`S`/`E`/`T`, `HELLO` vs `STOP`/`B`/`5`).
+- **Sub-task 3.2 — Velocity Thresholds & Gesture Cooldown Management**: Implement movement velocity filters and dynamic cooldowns to prevent spurious triggers during fingerspelling.
+- **Sub-task 3.3 — Bimanual Sequence Extraction for ISL**: Process dynamic samples for ISL (`HELLO`, `THANK YOU`, `YES`, `NO`, `PLEASE`, `HELP`, `WATER`).
+- **Sub-task 3.4 — Dynamic Baseline Training Experiments**: Establish baseline PyTorch LSTM experiments on dynamic sequences.
 
 Tasks:
 
@@ -633,7 +649,6 @@ This task must be treated as your most important and urgent work in Week 3, coor
 ### PAUSE-AND-REPORT CHECKPOINT — END OF WEEK 3
 
 Report:
-
 - Core classifier overhaul integration and temporal tracker boundary validation results
 - Number of dynamic samples prepared (ASL and ISL)
 - Dynamic classes across both languages
@@ -647,12 +662,17 @@ Do not claim model performance unless training has actually occurred.
 
 ---
 
-## WEEK 4 — LSTM Model Implementation
+## WEEK 4 — LSTM Model Implementation (Sep 12 – Sep 19, 2026)
 
 Implement the dynamic recognition model for both ASL and ISL.
 
-Tasks:
+### Granular Sub-Tasks:
+- **Sub-task 4.1 — Dual-Language LSTM Architecture Implementation**: Implement `DynamicSignLSTM` supporting both unimanual ASL (109 dims) and bimanual ISL (228 dims) with configurable hidden units and bidirectional layers.
+- **Sub-task 4.2 — Forward Pass & Logits Computation**: Implement sequence forward pass, temporal mean-pooling/last-step selection, and class probability prediction.
+- **Sub-task 4.3 — Modular PyTorch Training & Validation Loops**: Implement cross-entropy loss, AdamW optimizer, and learning rate scheduling (`ReduceLROnPlateau`).
+- **Sub-task 4.4 — Checkpoint Serialization & Best Weights Storage**: Save checkpoints to `models/asl_dynamic_lstm.pt` and `models/isl_dynamic_lstm.pt`.
 
+Tasks:
 1. Define the PyTorch LSTM architecture accommodating single-hand (109-dim ASL) and dual-hand (228-dim ISL) temporal sequences, or language-specific sequence heads.
 2. Implement the forward pass.
 3. Implement training and validation loops.
@@ -666,7 +686,6 @@ Keep the model architecture explainable.
 ### PAUSE-AND-REPORT CHECKPOINT — END OF WEEK 4
 
 Report:
-
 - LSTM architecture (handling ASL and ISL)
 - Input/output tensor shapes
 - Training configuration
@@ -680,12 +699,17 @@ Do not continue to major integration until the basic model pipeline works.
 
 ---
 
-## WEEK 5 — Dynamic Model Training and Evaluation
+## WEEK 5 — Dynamic Model Training and Evaluation (Sep 20 – Sep 26, 2026)
 
 Focus on actual experiments across both ASL and ISL.
 
-Tasks:
+### Granular Sub-Tasks:
+- **Sub-task 5.1 — Extended Model Training on Full Dynamic Datasets**: Train ASL and ISL LSTM models across full training splits with early stopping.
+- **Sub-task 5.2 — Validation Monitoring & Overfitting Prevention**: Track validation loss, accuracy curves, and apply dropout regularization ($p=0.3$).
+- **Sub-task 5.3 — Comprehensive Held-Out Test Evaluation**: Evaluate accuracy, precision, recall, macro F1, and weighted F1 on held-out test splits.
+- **Sub-task 5.4 — Confusion Matrix Generation & Weak Class Analysis**: Identify challenging motion trajectories, bimanual occlusions, and transition artifacts.
 
+Tasks:
 1. Train the dynamic LSTM models on ASL and ISL sequences.
 2. Monitor training and validation behavior for both languages.
 3. Save the best checkpoints (`asl_dynamic_lstm.pt` and `isl_dynamic_lstm.pt`).
@@ -703,7 +727,6 @@ Do not fabricate metrics.
 ### PAUSE-AND-REPORT CHECKPOINT — END OF WEEK 5
 
 Report:
-
 - Training status for both languages
 - Best validation results (ASL and ISL)
 - Test results
@@ -715,12 +738,18 @@ Report:
 
 ---
 
-## WEEK 6 — Real-Time Dynamic Inference
+## WEEK 6 — Real-Time Dynamic Inference (Sep 27 – Oct 03, 2026)
 
 Begin integrating the trained models conceptually with the live pipeline.
 
-Tasks:
+### Granular Sub-Tasks:
+- **Sub-task 6.1 — Rolling Temporal Buffer Interface**: Implement thread-safe rolling feature buffer ($T=30$) accepting per-frame MediaPipe features based on active language mode (`ASL` vs `ISL`).
+- **Sub-task 6.2 — Model Startup Loader & Warmup**: Load `asl_dynamic_lstm.pt` and `isl_dynamic_lstm.pt` once at startup with device auto-detection (`CPU`/`CUDA`).
+- **Sub-task 6.3 — Real-Time Inference Dispatcher**: Perform non-blocking dynamic inference when rolling buffer is saturated with active motion.
+- **Sub-task 6.4 — Confidence Calibration & Stability Guardrails**: Apply softmax thresholding and consecutive-frame stability filters to prevent prediction flicker.
+- **Sub-task 6.5 — Fallback & Legacy Tracker Coexistence**: Preserve heuristic tracker fallback while dynamic LSTM inference is validated.
 
+Tasks:
 1. Design rolling temporal feature buffers that accommodate both single-hand ASL streams and dual-hand ISL streams based on active language mode.
 2. Load the trained LSTM models once at startup.
 3. Convert buffered frames into model input conditioned on active language mode.
@@ -734,7 +763,6 @@ Do not remove the existing temporal tracker until the replacement is verified.
 ### PAUSE-AND-REPORT CHECKPOINT — END OF WEEK 6
 
 Report:
-
 - Real-time inference architecture for ASL and ISL
 - Buffer size and strategy for 1-hand and 2-hand inputs
 - Inference frequency
@@ -746,12 +774,18 @@ Report:
 
 ---
 
-## WEEK 7 — Sequence Buffer and NLP
+## WEEK 7 — Sequence Buffer and NLP (Oct 04 – Oct 10, 2026)
 
 Focus on converting recognized signs into meaningful language for both ASL and ISL.
 
-Tasks:
+### Granular Sub-Tasks:
+- **Sub-task 7.1 — Structured Sign Sequence Buffer**: Implement sequence buffer consuming static tokens (from Contributor 1) and dynamic tokens (from Contributor 2).
+- **Sub-task 7.2 — Duplicate Token Suppression & Debouncing**: Implement temporal debounce and consecutive duplicate suppression window.
+- **Sub-task 7.3 — Sign Boundary Detection & Word Segmentation**: Detect sign pauses and transitions using hand velocity and resting poses.
+- **Sub-task 7.4 — Language-Specific Grammar Transformations**: Implement deterministic rule-based sentence transformations for ASL (topic-comment) and ISL (SOV sentence patterns).
+- **Sub-task 7.5 — Capitalization, Punctuation & Output Formatting**: Apply automatic capitalization, punctuation insertion, and final English sentence composition.
 
+Tasks:
 1. Implement a structured sign sequence buffer handling tokens from both ASL and ISL recognition engines.
 2. Implement duplicate suppression.
 3. Implement basic sign boundary handling.
@@ -775,7 +809,6 @@ Tasks:
 ### PAUSE-AND-REPORT CHECKPOINT — END OF WEEK 7
 
 Report:
-
 - Sequence-buffer design (handling ASL and ISL tokens)
 - Duplicate suppression strategy
 - Boundary handling strategy
@@ -789,12 +822,17 @@ Do not claim unrestricted language translation.
 
 ---
 
-## WEEK 8 — Integration Support and Final Evaluation
+## WEEK 8 — Integration Support and Final Evaluation (Oct 11 – Oct 18, 2026)
 
 Prepare your modules for integration into the complete UNMUTE pipeline.
 
-Tasks:
+### Granular Sub-Tasks:
+- **Sub-task 8.1 — End-to-End Pipeline Integration Verification**: Test integration of static/dynamic recognition with sequence buffer and NLP pipeline in live WebSocket stream.
+- **Sub-task 8.2 — Multi-Modal Latency Benchmarking**: Measure per-frame inference latency, sequence buffer delay, and sentence formulation latency ($\le 25\text{ ms}$ total).
+- **Sub-task 8.3 — Comprehensive Failure Mode Documentation**: Document edge cases (bimanual hand swap, fast sign transitions, ungrammatical input sequences).
+- **Sub-task 8.4 — Final Technical Documentation & Handover Report**: Author technical documentation covering dynamic LSTM models, sequence buffer APIs, and NLP grammar rules.
 
+Tasks:
 1. Test static/dynamic prediction interfaces for both ASL and ISL with the backend contributor.
 2. Test sequence buffering with realistic recognition output from both language modes.
 3. Test NLP processing across both ASL and ISL.
@@ -806,7 +844,6 @@ Tasks:
 ### PAUSE-AND-REPORT CHECKPOINT — END OF WEEK 8
 
 Provide a final implementation report containing:
-
 - What was implemented (ASL and ISL dynamic recognition)
 - What was tested across both languages
 - Actual model evaluation results
