@@ -44,15 +44,19 @@ def kill_pid(pid: int):
         subprocess.run(["kill", "-9", str(pid)], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
 
+# Hardcoded dedicated port for UNMUTE to avoid clashes with 8080/8000/3000 and other local applications
+UNMUTE_PORT = 8505
+
+
 def main():
     parser = argparse.ArgumentParser(description="Stop UNMUTE Real-Time Sign Language Translation Server")
-    parser.add_argument("--port", type=int, default=8000, help="Port to check and free (default: 8000)")
-    parser.add_argument("--all", action="store_true", help="Check both standard ports (8000 and 8090)")
+    parser.add_argument("--port", type=int, default=UNMUTE_PORT, help=f"Port to check and free (default: {UNMUTE_PORT})")
+    parser.add_argument("--all", action="store_true", help=f"Check standard Unmute ports ({UNMUTE_PORT}, 8090, 8000)")
     args = parser.parse_args()
 
     ports_to_check = [args.port]
-    if args.all or args.port in (8000, 8090):
-        ports_to_check = list(dict.fromkeys([args.port, 8000, 8090]))
+    if args.all or args.port in (UNMUTE_PORT, 8090, 8000):
+        ports_to_check = list(dict.fromkeys([args.port, UNMUTE_PORT, 8090, 8000]))
 
     print("=" * 55)
     print(f"[*] Checking for UNMUTE server instances on ports: {ports_to_check}...")

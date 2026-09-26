@@ -1,0 +1,293 @@
+{
+  "language": "ISL",
+  "checkpoint": "models\\isl_static_mlp.pt",
+  "test_dataset": "data\\isl_test.npz",
+  "total_test_samples": 330,
+  "accuracy": 0.051515151515151514,
+  "macro_precision": 0.02112505541082482,
+  "macro_recall": 0.05275974025974026,
+  "macro_f1": 0.024796167630174247,
+  "weighted_precision": 0.020768974060891537,
+  "weighted_recall": 0.051515151515151514,
+  "weighted_f1": 0.024528515247186716,
+  "per_class_metrics": {
+    "0": {
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1-score": 0.0,
+      "support": 8.0
+    },
+    "1": {
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1-score": 0.0,
+      "support": 8.0
+    },
+    "2": {
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1-score": 0.0,
+      "support": 8.0
+    },
+    "3": {
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1-score": 0.0,
+      "support": 7.0
+    },
+    "4": {
+      "precision": 0.0875,
+      "recall": 1.0,
+      "f1-score": 0.16091954022988506,
+      "support": 7.0
+    },
+    "5": {
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1-score": 0.0,
+      "support": 8.0
+    },
+    "6": {
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1-score": 0.0,
+      "support": 7.0
+    },
+    "7": {
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1-score": 0.0,
+      "support": 8.0
+    },
+    "8": {
+      "precision": 0.2,
+      "recall": 0.14285714285714285,
+      "f1-score": 0.16666666666666666,
+      "support": 7.0
+    },
+    "9": {
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1-score": 0.0,
+      "support": 7.0
+    },
+    "A": {
+      "precision": 0.030303030303030304,
+      "recall": 0.125,
+      "f1-score": 0.04878048780487805,
+      "support": 8.0
+    },
+    "B": {
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1-score": 0.0,
+      "support": 8.0
+    },
+    "C": {
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1-score": 0.0,
+      "support": 7.0
+    },
+    "D": {
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1-score": 0.0,
+      "support": 7.0
+    },
+    "E": {
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1-score": 0.0,
+      "support": 8.0
+    },
+    "F": {
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1-score": 0.0,
+      "support": 7.0
+    },
+    "G": {
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1-score": 0.0,
+      "support": 7.0
+    },
+    "H": {
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1-score": 0.0,
+      "support": 7.0
+    },
+    "I": {
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1-score": 0.0,
+      "support": 8.0
+    },
+    "I LOVE YOU": {
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1-score": 0.0,
+      "support": 7.0
+    },
+    "J": {
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1-score": 0.0,
+      "support": 8.0
+    },
+    "K": {
+      "precision": 0.037037037037037035,
+      "recall": 0.125,
+      "f1-score": 0.05714285714285714,
+      "support": 8.0
+    },
+    "L": {
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1-score": 0.0,
+      "support": 8.0
+    },
+    "M": {
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1-score": 0.0,
+      "support": 8.0
+    },
+    "N": {
+      "precision": 0.03225806451612903,
+      "recall": 0.14285714285714285,
+      "f1-score": 0.05263157894736842,
+      "support": 7.0
+    },
+    "NAMASTE": {
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1-score": 0.0,
+      "support": 7.0
+    },
+    "O": {
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1-score": 0.0,
+      "support": 7.0
+    },
+    "OKAY": {
+      "precision": 0.0625,
+      "recall": 0.14285714285714285,
+      "f1-score": 0.08695652173913043,
+      "support": 7.0
+    },
+    "P": {
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1-score": 0.0,
+      "support": 8.0
+    },
+    "PEACE": {
+      "precision": 0.05263157894736842,
+      "recall": 0.125,
+      "f1-score": 0.07407407407407407,
+      "support": 8.0
+    },
+    "Q": {
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1-score": 0.0,
+      "support": 7.0
+    },
+    "R": {
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1-score": 0.0,
+      "support": 7.0
+    },
+    "S": {
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1-score": 0.0,
+      "support": 8.0
+    },
+    "SPACE": {
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1-score": 0.0,
+      "support": 8.0
+    },
+    "STOP": {
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1-score": 0.0,
+      "support": 7.0
+    },
+    "T": {
+      "precision": 0.045454545454545456,
+      "recall": 0.125,
+      "f1-score": 0.06666666666666667,
+      "support": 8.0
+    },
+    "THUMBS DOWN": {
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1-score": 0.0,
+      "support": 7.0
+    },
+    "THUMBS UP": {
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1-score": 0.0,
+      "support": 7.0
+    },
+    "U": {
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1-score": 0.0,
+      "support": 8.0
+    },
+    "V": {
+      "precision": 0.18181818181818182,
+      "recall": 0.25,
+      "f1-score": 0.21052631578947367,
+      "support": 8.0
+    },
+    "W": {
+      "precision": 0.2,
+      "recall": 0.14285714285714285,
+      "f1-score": 0.16666666666666666,
+      "support": 7.0
+    },
+    "X": {
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1-score": 0.0,
+      "support": 7.0
+    },
+    "Y": {
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1-score": 0.0,
+      "support": 8.0
+    },
+    "Z": {
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1-score": 0.0,
+      "support": 8.0
+    },
+    "accuracy": 0.051515151515151514,
+    "macro avg": {
+      "precision": 0.02112505541082482,
+      "recall": 0.05275974025974026,
+      "f1-score": 0.024796167630174247,
+      "support": 330.0
+    },
+    "weighted avg": {
+      "precision": 0.020768974060891537,
+      "recall": 0.051515151515151514,
+      "f1-score": 0.024528515247186716,
+      "support": 330.0
+    }
+  },
+  "confusion_matrix_image": "reports\\isl_confusion_matrix.png"
+}

@@ -40,7 +40,10 @@
       </button>
     </nav>
 
-    <div class="header-right" style="display: flex; gap: 12px; align-items: center;">
+    <div class="header-right" style="display: flex; gap: 10px; align-items: center;">
+      <button class="secondary-btn glow-btn" id="btn-header-3d-guide" title="Open Interactive 3D Hand Model & Animated Guide" style="padding: 5px 12px; font-size: 0.78rem; border-color: var(--accent-cyan); color: var(--accent-cyan); font-weight: 700;">
+        🖐️ 3D Hand Model
+      </button>
       <button class="icon-btn" id="theme-toggle-btn" title="Toggle Light/Dark Theme">
         <span id="theme-icon">🌙</span>
       </button>
@@ -199,6 +202,69 @@
             </div>
           </div>
 
+          <!-- Live 3D Sign Reference & Pose Guide -->
+          <div class="live-3d-guide-box">
+            <div class="box-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <h4 style="margin: 0; font-size: 0.92rem; color: var(--accent-cyan); display: flex; align-items: center; gap: 6px;">
+                <span>🖐️</span> 3D Sign Reference Guide
+              </h4>
+              <div style="display: flex; gap: 6px; align-items: center;">
+                <select id="camera-guide-sign-select" class="sign-select-mini" title="Pick sign to preview in 3D">
+                  <option value="AUTO">Auto (Track Hand)</option>
+                  <option value="A">Letter A</option>
+                  <option value="B">Letter B</option>
+                  <option value="C">Letter C</option>
+                  <option value="D">Letter D</option>
+                  <option value="E">Letter E</option>
+                  <option value="F">Letter F</option>
+                  <option value="G">Letter G</option>
+                  <option value="H">Letter H</option>
+                  <option value="I">Letter I</option>
+                  <option value="K">Letter K</option>
+                  <option value="L">Letter L</option>
+                  <option value="M">Letter M</option>
+                  <option value="N">Letter N</option>
+                  <option value="O">Letter O</option>
+                  <option value="P">Letter P</option>
+                  <option value="R">Letter R</option>
+                  <option value="S">Letter S</option>
+                  <option value="T">Letter T</option>
+                  <option value="U">Letter U</option>
+                  <option value="V">Letter V</option>
+                  <option value="W">Letter W</option>
+                  <option value="X">Letter X</option>
+                  <option value="Y">Letter Y</option>
+                  <option value="PEACE">PEACE</option>
+                  <option value="I LOVE YOU">I LOVE YOU</option>
+                  <option value="OKAY">OKAY</option>
+                  <option value="THUMBS UP">THUMBS UP</option>
+                  <option value="STOP">STOP</option>
+                </select>
+                <button class="action-btn" id="btn-camera-open-modal" title="Open Full Interactive 3D Model Inspector">🔍 3D Orbit</button>
+              </div>
+            </div>
+
+            <div class="live-3d-content">
+              <div class="live-3d-canvas-wrap" id="camera-ref-canvas-wrap" title="Click and drag to rotate 3D hand model">
+                <canvas id="camera-ref-canvas" width="160" height="160"></canvas>
+                <div class="drag-hint-overlay mini">
+                  <span>🖱️ Drag to rotate 3D</span>
+                </div>
+              </div>
+              <div class="live-3d-details">
+                <div class="live-3d-sign-title" id="camera-ref-sign-title">Letter 'A'</div>
+                <p class="live-3d-sign-desc" id="camera-ref-sign-desc">Fist with thumb resting upright alongside index finger.</p>
+                <div class="finger-legend-compact">
+                  <span class="legend-chip"><span class="legend-dot" style="background: #ff9f1c;"></span>Thumb</span>
+                  <span class="legend-chip"><span class="legend-dot" style="background: #00f0ff;"></span>Index</span>
+                  <span class="legend-chip"><span class="legend-dot" style="background: #20bf6b;"></span>Middle</span>
+                  <span class="legend-chip"><span class="legend-dot" style="background: #9b5de5;"></span>Ring</span>
+                  <span class="legend-chip"><span class="legend-dot" style="background: #f72585;"></span>Pinky</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <!-- Quick Sign Helper Hints -->
           <div class="quick-hints-box">
             <h4>Recognized Gestures</h4>
@@ -341,9 +407,24 @@
               <!-- Interactive Target Sign Skeleton Visualizer -->
               <div class="practice-target-visualizer-container">
                 <div class="target-visualizer-box">
-                  <canvas id="practice-target-canvas" width="200" height="200"></canvas>
+                  <!-- In-Card 3D Presets -->
+                  <div class="practice-3d-presets-bar">
+                    <button class="view-preset-btn active" data-pview="isometric">3D Orbit</button>
+                    <button class="view-preset-btn" data-pview="front">Front</button>
+                    <button class="view-preset-btn" data-pview="side">Side</button>
+                    <button class="view-preset-btn anim-btn" id="btn-practice-anim-toggle" title="Animate finger formation">▶ Animate</button>
+                  </div>
+
+                  <!-- Canvas with 3D Orbit Drag -->
+                  <div class="practice-canvas-wrapper" id="practice-canvas-wrapper" title="Click and drag to rotate 3D hand model">
+                    <canvas id="practice-target-canvas" width="200" height="200"></canvas>
+                    <div class="drag-hint-overlay mini">
+                      <span class="drag-icon">🖱️</span> Drag to rotate 3D
+                    </div>
+                  </div>
+
                   <div class="target-canvas-tag">
-                    <span class="pulse-dot"></span> Reference Pose
+                    <span class="pulse-dot"></span> Interactive 3D Reference
                   </div>
                 </div>
               </div>
@@ -365,6 +446,7 @@
             </div>
 
             <div class="challenge-actions">
+              <button class="secondary-btn glow-btn" id="btn-view-practice-guide" style="border-color: var(--accent-cyan); color: var(--accent-cyan); font-weight: 700;" title="Open Interactive 3D Model & Animated Formation Guide">🖐️ Full 3D Inspector & Tips</button>
               <button class="secondary-btn" id="btn-skip-challenge">Skip Sign</button>
               <button class="primary-btn glow-btn" id="btn-next-challenge">Next Challenge ➔</button>
             </div>
@@ -449,27 +531,27 @@
     </section>
 
 
-    <!-- ================= TAB 5: ASL GUIDE & DICTIONARY ================= -->
+    <!-- ================= TAB 5: ASL DICTIONARY ================= -->
     <section class="tab-content" id="dictionary-tab">
       <div class="dictionary-container glass-panel">
         <div class="dictionary-header">
           <div>
-            <h3>American Sign Language (ASL) Visual Guide</h3>
-            <p>Comprehensive visual reference for letters, numbers, and common dynamic gesture phrases.</p>
+            <h3>ASL Visual Sign Dictionary</h3>
+            <p>Interactive 3D anatomical reference and formation guide for all signs.</p>
           </div>
           <div class="dictionary-search-bar">
-            <input type="text" id="dict-search-input" placeholder="🔍 Search letter or word (e.g. 'Hello', 'A', 'Peace')..." class="search-input">
+            <input type="text" id="dict-search-input" placeholder="Search signs, letters, phrases..." class="text-input">
             <div class="filter-pills">
               <button class="filter-pill active" data-filter="all">All</button>
-              <button class="filter-pill" data-filter="Alphabet">A–Z Alphabet</button>
-              <button class="filter-pill" data-filter="Phrase">Phrases & Signs</button>
+              <button class="filter-pill" data-filter="Alphabet">Alphabet (A-Z)</button>
+              <button class="filter-pill" data-filter="Number">Numbers</button>
+              <button class="filter-pill" data-filter="Phrase">Phrases</button>
             </div>
           </div>
         </div>
 
-        <!-- Dictionary Cards Grid -->
         <div class="dict-grid" id="dict-grid">
-          <!-- Dynamically populated -->
+          <!-- Populated dynamically by JavaScript -->
         </div>
       </div>
     </section>
@@ -489,11 +571,38 @@
       </div>
       <div class="modal-body-grid">
         <div class="modal-visualizer-box">
-          <canvas id="modal-sign-canvas" width="280" height="280"></canvas>
+          <!-- 3D Perspective Controls -->
+          <div class="view-presets-bar">
+            <span class="preset-label">3D View:</span>
+            <button class="view-preset-btn active" data-view="front">Front</button>
+            <button class="view-preset-btn" data-view="side">Side</button>
+            <button class="view-preset-btn" data-view="top">Top</button>
+            <button class="view-preset-btn" data-view="isometric">3D Orbit</button>
+            <button class="view-preset-btn anim-btn" id="btn-modal-anim-toggle" title="Animate finger formation">▶ Animate</button>
+          </div>
+
+          <!-- Interactive 3D Canvas Viewport -->
+          <div class="canvas-3d-wrapper">
+            <canvas id="modal-sign-canvas" width="280" height="280"></canvas>
+            <div class="drag-hint-overlay">
+              <span class="drag-icon">🖱️</span> Drag to rotate 3D view
+            </div>
+          </div>
+
+          <!-- Color-Coded Finger Legend -->
+          <div class="finger-color-legend">
+            <span class="legend-chip"><span class="legend-dot" style="background: #ff9f1c;"></span>Thumb</span>
+            <span class="legend-chip"><span class="legend-dot" style="background: #00f0ff;"></span>Index</span>
+            <span class="legend-chip"><span class="legend-dot" style="background: #20bf6b;"></span>Middle</span>
+            <span class="legend-chip"><span class="legend-dot" style="background: #9b5de5;"></span>Ring</span>
+            <span class="legend-chip"><span class="legend-dot" style="background: #f72585;"></span>Pinky</span>
+          </div>
+
           <div class="modal-vis-tag">
-            <span class="pulse-dot"></span> Canonical ASL Handshape Reference
+            <span class="pulse-dot"></span> Interactive 3D Canonical Handshape Reference
           </div>
         </div>
+
         <div class="modal-info-box">
           <div class="modal-section">
             <h4 class="modal-section-title">🖐️ Anatomical Execution</h4>
@@ -504,13 +613,13 @@
             <p id="modal-sign-tips" class="modal-tips-text">Keep thumb vertical along the side of the fist.</p>
           </div>
           <div class="modal-section">
-            <h4 class="modal-section-title">🔍 Joint Keypoints</h4>
+            <h4 class="modal-section-title">🔍 Finger Pose Breakdown</h4>
             <div class="modal-keypoints-list" id="modal-keypoints-list">
-              <span class="kpoint-tag">Thumb: Extended</span>
-              <span class="kpoint-tag">Index: Curled</span>
-              <span class="kpoint-tag">Middle: Curled</span>
-              <span class="kpoint-tag">Ring: Curled</span>
-              <span class="kpoint-tag">Pinky: Curled</span>
+              <span class="kpoint-tag" style="border-left: 3px solid #ff9f1c;"><strong style="color: #ff9f1c;">Thumb:</strong> Extended</span>
+              <span class="kpoint-tag" style="border-left: 3px solid #00f0ff;"><strong style="color: #00f0ff;">Index:</strong> Curled</span>
+              <span class="kpoint-tag" style="border-left: 3px solid #20bf6b;"><strong style="color: #20bf6b;">Middle:</strong> Curled</span>
+              <span class="kpoint-tag" style="border-left: 3px solid #9b5de5;"><strong style="color: #9b5de5;">Ring:</strong> Curled</span>
+              <span class="kpoint-tag" style="border-left: 3px solid #f72585;"><strong style="color: #f72585;">Pinky:</strong> Curled</span>
             </div>
           </div>
         </div>
@@ -521,7 +630,11 @@
   <!-- Notification Toast Container -->
   <div class="toast-container" id="toast-container"></div>
 
-  <!-- JavaScript Module -->
+  <!-- 3D Engine & Controls -->
+  <script src="/static/three.min.js"></script>
+  <script src="/static/OrbitControls.js"></script>
+
+  <!-- JavaScript Application Module -->
   <script src="/static/app.js"></script>
 </body>
 </html>

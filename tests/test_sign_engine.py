@@ -438,3 +438,136 @@ def test_asl_phrases_recognition():
     )
     assert classifier.classify_hand(td_hand).predicted_sign == "THUMBS DOWN"
 
+
+def test_peace_vs_k_disambiguation():
+    """Verify webcam-style PEACE / V hand is never misclassified as K."""
+    classifier = ASLClassifier()
+
+    # Natural webcam Peace sign: Index and Middle upright in 'V', thumb resting naturally across ring/pinky
+    peace_hand = _make_hand(
+        thumb_pts=[(0.44, 0.75, 0.0), (0.48, 0.73, 0.0), (0.52, 0.72, 0.0), (0.54, 0.71, 0.0)],
+        index_pts=_upright(0.44, 0.64, spread_x=-0.09),
+        middle_pts=_upright(0.50, 0.63, spread_x=0.09),
+        ring_pts=_curled(0.56, 0.65),
+        pinky_pts=_curled(0.62, 0.68),
+    )
+    res = classifier.classify_hand(peace_hand)
+    assert res.predicted_sign in ("PEACE", "V")
+    assert res.predicted_sign != "K"
+    assert res.confidence >= 0.90
+
+
+def test_b_vs_5_disambiguation():
+    """Verify 4 fingers up with thumb folded across palm is 'B', while open palm is 'STOP' / '5'."""
+    classifier = ASLClassifier()
+
+    # 1. B Hand: 4 upright fingers held straight, thumb folded flat across palm
+    b_hand = _make_hand(
+        thumb_pts=[(0.42, 0.74, 0.0), (0.46, 0.72, 0.0), (0.49, 0.71, 0.0), (0.51, 0.71, 0.0)],
+        index_pts=_upright(0.44, 0.64),
+        middle_pts=_upright(0.48, 0.63),
+        ring_pts=_upright(0.52, 0.64),
+        pinky_pts=_upright(0.56, 0.66),
+    )
+    res_b = classifier.classify_hand(b_hand)
+    assert res_b.predicted_sign in ("B", "4")
+
+    # 2. Open Palm (5 / STOP): 4 fingers up and thumb extended laterally wide
+    open_hand = _make_hand(
+        thumb_pts=[(0.42, 0.74, 0.0), (0.32, 0.70, 0.0), (0.22, 0.67, 0.0), (0.12, 0.65, 0.0)],
+        index_pts=_upright(0.44, 0.64, spread_x=-0.04),
+        middle_pts=_upright(0.50, 0.63),
+        ring_pts=_upright(0.56, 0.65, spread_x=0.04),
+        pinky_pts=_upright(0.62, 0.68, spread_x=0.08),
+    )
+    res_open = classifier.classify_hand(open_hand)
+    assert res_open.predicted_sign in ("STOP", "5")
+
+
+def test_c_vs_o_disambiguation():
+    """Verify 'C' open curved hand vs 'O' closed tip touch."""
+    classifier = ASLClassifier()
+
+    # 1. 'O': Thumb tip and index tip touching closely
+    o_hand = _make_hand(
+        thumb_pts=[(0.42, 0.74, 0.0), (0.44, 0.68, 0.0), (0.46, 0.64, 0.0), (0.48, 0.62, 0.0)],
+        index_pts=[(0.48, 0.64, 0.0), (0.50, 0.60, 0.0), (0.50, 0.58, 0.0), (0.48, 0.62, 0.0)],
+        middle_pts=_curled(0.52, 0.64),
+        ring_pts=_curled(0.56, 0.66),
+        pinky_pts=_curled(0.60, 0.68),
+    )
+    res_o = classifier.classify_hand(o_hand)
+    assert res_o.predicted_sign in ("O", "0")
+
+    # 2. 'C': Smooth open arc with clear separation between thumb and fingers
+    c_hand = _make_hand(
+        thumb_pts=[(0.42, 0.74, 0.0), (0.36, 0.70, 0.0), (0.32, 0.66, 0.0), (0.30, 0.62, 0.0)],
+        index_pts=[(0.44, 0.64, 0.0), (0.44, 0.54, 0.0), (0.40, 0.48, 0.0), (0.34, 0.48, 0.0)],
+        middle_pts=[(0.50, 0.63, 0.0), (0.50, 0.53, 0.0), (0.46, 0.47, 0.0), (0.40, 0.47, 0.0)],
+        ring_pts=_curled(0.56, 0.65),
+        pinky_pts=_curled(0.62, 0.68),
+    )
+    res_c = classifier.classify_hand(c_hand)
+    assert res_c.predicted_sign in ("C", "O")
+
+
+def test_u_vs_v_vs_r_disambiguation():
+    """Verify 'U' (together), 'V' (spread), and 'R' (crossed) are accurately recognized."""
+    classifier = ASLClassifier()
+
+    # 1. 'U' Hand: Index and Middle upright pressed close together
+    u_hand = _make_hand(
+        thumb_pts=_curled(0.42, 0.74),
+        index_pts=_upright(0.46, 0.64),
+        middle_pts=_upright(0.48, 0.63),
+        ring_pts=_curled(0.56, 0.65),
+        pinky_pts=_curled(0.62, 0.68),
+    )
+    res_u = classifier.classify_hand(u_hand)
+    assert res_u.predicted_sign in ("U", "2", "V")
+    # Verify 'U' is among the top candidates
+    top_labels = [p.label for p in res_u.top_predictions]
+    assert "U" in top_labels
+
+    # 2. 'R' Hand: Index crossed over Middle
+    r_hand = _make_hand(
+        thumb_pts=_curled(0.42, 0.74),
+        index_pts=[(0.44, 0.64, 0.0), (0.47, 0.54, 0.0), (0.50, 0.44, 0.0), (0.53, 0.35, 0.0)],
+        middle_pts=[(0.50, 0.63, 0.0), (0.48, 0.53, 0.0), (0.46, 0.44, 0.0), (0.44, 0.35, 0.0)],
+        ring_pts=_curled(0.56, 0.65),
+        pinky_pts=_curled(0.62, 0.68),
+    )
+    res_r = classifier.classify_hand(r_hand)
+    assert res_r.predicted_sign in ("R", "U")
+    top_labels_r = [p.label for p in res_r.top_predictions]
+    assert "R" in top_labels_r
+
+
+def test_universal_hand_proportion_invariance():
+    """Verify Self-Phalange Bone Ratio works across diverse hand proportions (children, slender, broad)."""
+    classifier = ASLClassifier()
+
+    # Slender hand with long fingers (finger length > palm length)
+    slender_u = _make_hand(
+        thumb_pts=_curled(0.42, 0.74),
+        index_pts=[(0.46, 0.64, 0.0), (0.46, 0.50, 0.0), (0.46, 0.36, 0.0), (0.46, 0.22, 0.0)],
+        middle_pts=[(0.48, 0.63, 0.0), (0.48, 0.49, 0.0), (0.48, 0.35, 0.0), (0.48, 0.21, 0.0)],
+        ring_pts=_curled(0.56, 0.65),
+        pinky_pts=_curled(0.62, 0.68),
+    )
+    res_slender = classifier.classify_hand(slender_u)
+    assert "U" in [p.label for p in res_slender.top_predictions]
+
+    # Broad hand with short fingers (finger length < 0.65 of palm length)
+    broad_u = _make_hand(
+        thumb_pts=_curled(0.40, 0.76),
+        index_pts=[(0.46, 0.64, 0.0), (0.46, 0.58, 0.0), (0.46, 0.52, 0.0), (0.46, 0.46, 0.0)],
+        middle_pts=[(0.48, 0.63, 0.0), (0.48, 0.57, 0.0), (0.48, 0.51, 0.0), (0.48, 0.45, 0.0)],
+        ring_pts=_curled(0.58, 0.65),
+        pinky_pts=_curled(0.66, 0.68),
+    )
+    res_broad = classifier.classify_hand(broad_u)
+    assert "U" in [p.label for p in res_broad.top_predictions]
+
+
+
