@@ -119,12 +119,28 @@ package "Machine Learning Foundation (ml/)" {
   component "Static ISL Recognition MLP (ml/models/static_mlp.py)" as MLModelISL <<Model>>
   component "Dynamic Sign Sequence LSTM (PyTorch)" as MLModelLSTM <<Model>>
   component "Training & Optimization Suite (ml/training/train_static.py)" as MLTrainEval <<Engine>>
+  component "Data Augmentation Transforms (ml/data/augmentations.py)" as MLAugment <<Transformer>>
+  note bottom of MLAugment
+    Stochastic Pipeline:
+    - Gaussian Landmark Jitter
+    - Feature Scale Perturbation
+    - Feature Channel Dropout
+  end note
+
   component "Static Model Evaluation Engine (ml/evaluation/evaluate_static.py)" as MLEvalEngine <<Engine>>
   note bottom of MLEvalEngine
     Evaluation Engine:
     - Classification Metrics (Accuracy, Macro/Weighted F1, Prec, Rec)
     - High-Resolution Confusion Matrix Heatmaps (Seaborn/Matplotlib)
     - Full Metric JSON Serialization & Reporting
+  end note
+
+  component "Robustness & Benchmark Harness (ml/evaluation/robustness_test.py)" as MLRobust <<Benchmark>>
+  note bottom of MLRobust
+    Robustness Suite:
+    - Escalating Gaussian Noise Resilience
+    - ISL Single-Hand Fallback Degradation
+    - Comparative Benchmark vs Legacy Random Forest
   end note
 }
 
@@ -158,6 +174,7 @@ package "File Storage & Project Assets" {
   folder "Evaluation Reports & Visualizations (reports/)" as StorageReports {
     [asl_evaluation_report.json, isl_evaluation_report.json]
     [asl_confusion_matrix.png, isl_confusion_matrix.png]
+    [model_comparison_report.json]
   }
 
   folder "Client Static Web Assets (static/)" as StorageStatic {
@@ -264,5 +281,10 @@ StorageData -[#AA00FF]-> MLEvalEngine : Supplies Held-Out Test Splits (.npz)
 MLEvalEngine -[#6200EA]-> StorageReports : Exports Evaluation Metrics JSON & Heatmap PNGs
 MLLabels -[#2962FF]-> MLEvalEngine : Supplies Canonical Target Class Names
 MLDataset -[#00B8D4]-> MLEvalEngine : Supplies Test Set PyTorch DataLoader
+
+MLAugment -[#FF1744]-> MLDataset : Injects On-The-Fly Geometric Training Augmentations
+StorageModels ..[#D500F9]..> MLRobust : Supplies PyTorch MLPs & Legacy RF for Robustness Audit
+StorageData -[#00E5FF]-> MLRobust : Supplies Clean & Perturbed Test Landmark Splits
+MLRobust -[#76FF03]-> StorageReports : Exports model_comparison_report.json
 
 @enduml

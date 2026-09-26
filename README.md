@@ -155,13 +155,15 @@ unmute/
 │   ├── data/                 # Data preparation, labels, and PyTorch datasets
 │   │   ├── labels.py         # Canonical class definitions for ASL (41) and ISL (44)
 │   │   ├── prepare_dataset.py# Feature extraction & stratified zero-leakage 70/15/15 splitting
-│   │   └── dataset.py        # PyTorch StaticSignDataset and get_dataloaders() factory
+│   │   ├── dataset.py        # PyTorch StaticSignDataset, get_dataloaders, and class weights
+│   │   └── augmentations.py  # Geometric jitter, scale perturbation, and channel dropout
 │   ├── models/               # PyTorch neural network architectures
-│   │   └── static_mlp.py     # StaticASL_MLP (109 dims) and StaticISL_MLP (228 dims)
+│   │   └── static_mlp.py     # StaticASL_MLP and StaticISL_MLP with ResidualBlock skip connections
 │   ├── training/             # Training & optimization pipelines
-│   │   └── train_static.py   # Modular PyTorch training CLI with early stopping and checkpointing
+│   │   └── train_static.py   # Modular PyTorch training CLI with early stopping and augmentation
 │   ├── evaluation/           # Model evaluation and metric computation suite
-│   │   └── evaluate_static.py# Classification metrics and confusion matrix generator
+│   │   ├── evaluate_static.py# Classification metrics and confusion matrix generator
+│   │   └── robustness_test.py# Noise resilience, single-hand fallback, and RF comparative benchmark
 │   ├── legacy_rf_audit.py    # Audit suite for legacy Random Forest model
 │   └── dataset_recommendation.md # Dataset strategy and anatomical sign catalogs
 ├── static/                   # Frontend single-page application
@@ -173,16 +175,18 @@ unmute/
 │   ├── asl_static_mlp.pt     # Trained PyTorch ASL Static MLP checkpoint
 │   └── isl_static_mlp.pt     # Trained PyTorch ISL Static MLP checkpoint
 ├── reports/                  # Generated model evaluation reports and confusion matrices
-│   ├── asl_evaluation_report.json # ASL classification metrics breakdown
-│   ├── asl_confusion_matrix.png   # High-resolution ASL confusion matrix heatmap
-│   ├── isl_evaluation_report.json # ISL classification metrics breakdown
-│   └── isl_confusion_matrix.png   # High-resolution ISL confusion matrix heatmap
+│   ├── asl_evaluation_report.json   # ASL classification metrics breakdown
+│   ├── asl_confusion_matrix.png     # High-resolution ASL confusion matrix heatmap
+│   ├── isl_evaluation_report.json   # ISL classification metrics breakdown
+│   ├── isl_confusion_matrix.png     # High-resolution ISL confusion matrix heatmap
+│   └── model_comparison_report.json # Robustness testing and legacy baseline comparison
 ├── tests/                    # Automated pytest test suite
 │   ├── test_backend.py       # REST and WebSocket endpoint integration tests
 │   ├── test_sign_engine.py   # Landmark, feature engineering, and classifier tests
 │   ├── test_ml_data.py       # Label mappings, dual features, zero-leakage splits tests
 │   ├── test_static_mlp.py    # PyTorch Static MLP architectures and training tests
-│   └── test_evaluation.py    # Evaluation metrics, confusion matrix, and schema tests
+│   ├── test_evaluation.py    # Evaluation metrics, confusion matrix, and schema tests
+│   └── test_robustness.py    # Augmentation transforms, class weights, and fallback tests
 ├── agent/                    # Contributor documentation, master plans, and audit reports
 │   └── docs/                 # Contributor prompts, weekly roadmaps, and audit files
 ├── architecture.puml         # Authoritative PlantUML system architecture diagram
@@ -215,13 +219,13 @@ python ml/data/prepare_dataset.py --language ISL --output-dir data
 ```
 
 ### Train Static Recognition Models
-To train the PyTorch Multi-Layer Perceptrons with learning rate scheduling, early stopping, and best validation checkpointing:
+To train the PyTorch Multi-Layer Perceptrons with learning rate scheduling, early stopping, residual skip blocks, data augmentation, and class weighting:
 ```bash
-# Train Static ASL MLP (saves models/asl_static_mlp.pt)
-python -m ml.training.train_static --language ASL --epochs 30 --patience 7
+# Train Improved Static ASL MLP (saves models/asl_static_mlp.pt)
+python -m ml.training.train_static --language ASL --epochs 30 --patience 7 --use-residual --augment --weighted-loss
 
-# Train Static ISL MLP (saves models/isl_static_mlp.pt)
-python -m ml.training.train_static --language ISL --epochs 30 --patience 7
+# Train Improved Static ISL MLP (saves models/isl_static_mlp.pt)
+python -m ml.training.train_static --language ISL --epochs 30 --patience 7 --use-residual --augment --weighted-loss
 ```
 
 ### Evaluate Static Recognition Models
@@ -236,6 +240,13 @@ python -m ml.evaluation.evaluate_static --language ISL --output-dir reports
 Generated reports are stored in `reports/`:
 - `reports/asl_evaluation_report.json` and `reports/asl_confusion_matrix.png`
 - `reports/isl_evaluation_report.json` and `reports/isl_confusion_matrix.png`
+
+### Robustness Testing & Baseline Comparison
+To evaluate model resilience under escalating Gaussian feature perturbations ($\sigma \in [0.01, 0.10]$), quantify ISL single-hand fallback retention, and benchmark against the legacy Random Forest baseline:
+```bash
+python -m ml.evaluation.robustness_test --output reports/model_comparison_report.json
+```
+Findings and degradation metrics are exported to `reports/model_comparison_report.json`.
 
 ---
 
