@@ -241,12 +241,17 @@ Do not modify the recognition architecture unnecessarily.
 ## Deliverable
 
 Create a short technical audit documenting:
-
 - Current accumulation flow
 - Current API/WebSocket flow
 - Current speech flow
 - Recommended integration points
 - Files likely to require modification
+
+### Granular Sub-Tasks:
+- **Sub-task 1.1 — Backend API & Pipeline Architecture Audit**: Inspect `run.py`, FastAPI endpoints (`/predict_frame`, `/dictionary`), WebSocket handlers, and current text accumulation in `static/app.js`.
+- **Sub-task 1.2 — Token & Sentence Flow Specifications**: Formulate end-to-end token flow architecture: `Recognized Sign Token` $\to$ `Sequence Buffer` $\to$ `Sentence Processor` $\to$ `WebSocket/TTS`.
+- **Sub-task 1.3 — Evaluation Metric & Benchmark Harness Planning**: Design framework to measure latency, frame rates (FPS), and grammar conversion accuracy across unimanual and bimanual modes.
+- **Sub-task 1.4 — Cross-Contributor Integration Interface Definition**: Define expected data contracts with Contributor 1 (static MLP predictions) and Contributor 2 (dynamic LSTM sequence tokens).
 
 ---
 
@@ -255,7 +260,6 @@ Create a short technical audit documenting:
 Stop before implementing major language-processing changes.
 
 Report:
-
 1. Current repository state.
 2. Exact current text/sign accumulation behavior.
 3. Recommended structured token flow.
@@ -268,16 +272,21 @@ Wait for review/approval before proceeding if coordination decisions are require
 
 ---
 
-# WEEK 2 — STRUCTURED SIGN TOKENS AND SEQUENCE INTERFACE
+# WEEK 2 — STRUCTURED SIGN TOKENS AND SEQUENCE INTERFACE (Sep 07 – Sep 08, 2026)
 
 ## Goals
 
 Design the internal interface between recognition and sentence formation.
 
+### Granular Sub-Tasks:
+- **Sub-task 2.1 — Dual-Language Structured Token Schema**: Define standard `Token` contract (`text`, `confidence`, `language: "ASL" | "ISL"`, `sign_type`, `timestamp`).
+- **Sub-task 2.2 — Token Normalization & Lexicon Mapping**: Implement token normalization dictionary handling case insensitivity, synonyms, and culturally distinct greetings (`NAMASTE`, `HELLO`, `THANK YOU`).
+- **Sub-task 2.3 — Sequence Buffer Interface Definition**: Define `process_sign_sequence()` signature and return contracts decoupled from model implementations.
+- **Sub-task 2.4 — Unknown & Duplicate Token Filtering**: Implement rejection policies for low-confidence or duplicate token chatter.
+
 The language-processing component must receive structured sign tokens rather than directly depending on raw frontend strings.
 
 Example:
-
 ```python
 ["I", "GO", "HOME", "YESTERDAY"]
 ```
@@ -285,7 +294,6 @@ Example:
 Create a clean, documented interface.
 
 For example:
-
 ```python
 process_sign_sequence(
     ["I", "GO", "HOME", "YESTERDAY"]
@@ -293,7 +301,6 @@ process_sign_sequence(
 ```
 
 Expected output:
-
 ```text
 I went home yesterday.
 ```
@@ -303,7 +310,6 @@ The exact implementation may differ.
 ## Requirements
 
 The interface should be:
-
 - Modular
 - Vocabulary-aware
 - Extensible
@@ -319,7 +325,6 @@ The supported vocabulary must ultimately depend on the actual recognition models
 ## Deliverables
 
 Define:
-
 - Token representation
 - Token normalization strategy
 - Sequence input format
@@ -349,7 +354,6 @@ Incorporate Indian Sign Language (ISL) alongside American Sign Language (ASL) in
 ## ⏸ PAUSE-AND-REPORT CHECKPOINT — END OF WEEK 2
 
 Stop and report:
-
 1. Final proposed token format.
 2. Example inputs and outputs.
 3. Integration contract for Contributors 1 and 2.
@@ -361,7 +365,14 @@ Do not begin major grammar implementation until the token interface is stable.
 
 ---
 
-# WEEK 3 — RULE-BASED SENTENCE FORMATION
+# WEEK 3 — RULE-BASED SENTENCE FORMATION (Sep 10 – Sep 11, 2026)
+
+### Granular Sub-Tasks:
+- **Sub-task 3.1 — Practice Studio Pose-Matching Overhaul**: Implement `SIGN_ALIASES` handshape lookup matrix in `static/app.js` (`PEACE` $\leftrightarrow$ `V` $\leftrightarrow$ `2`, `OKAY` $\leftrightarrow$ `F`, `STOP` $\leftrightarrow$ `5` $\leftrightarrow$ `B`).
+- **Sub-task 3.2 — Live Camera WebSocket Pipeline Stabilization**: Verify live stream WebSocket passes disambiguated signs to Letter Accumulator, Sentence Composer, and TTS without flutter.
+- **Sub-task 3.3 — Offline Video Processor Subtitle Validation**: Verify `VideoProcessor` (`sign_engine/video_processor.py`) exports valid `.srt`, `.vtt`, `.json`, and `.txt` transcripts.
+- **Sub-task 3.4 — Rule-Based Grammar Transformation Engine**: Implement deterministic grammar transformation rules for ASL (topic-comment) and ISL (SOV sentence patterns).
+- **Sub-task 3.5 — Capitalization & Punctuation Pipeline**: Add automatic sentence boundary punctuation (periods, question marks) and capitalization.
 
 ### 🚨 URGENT PRIORITY WORK — System-Wide Classifier Overhaul Integration, Practice Studio Aliasing & Subtitle Verification
 
@@ -393,7 +404,6 @@ Do **NOT** use an LLM as a substitute for incorrect sign recognition.
 Do **NOT** hallucinate missing signs.
 
 The intended pipeline is:
-
 ```text
 Sign Tokens (ASL / ISL)
 ↓
@@ -435,7 +445,6 @@ This does not mean the system supports unrestricted ASL-to-English or ISL-to-Eng
 It is a **controlled-vocabulary sentence-formation system** supporting both sign languages.
 
 ## Suggested Structure
-
 ```text
 nlp/
 ├── sentence_processor.py
@@ -451,7 +460,6 @@ You may adapt this structure if necessary.
 Implement explainable rules for supported patterns across both languages.
 
 Examples may include:
-
 - Pronoun handling (ASL & ISL)
 - Basic verb transformations
 - Time-word positioning (ASL Topic-Time-Comment structure)
@@ -475,7 +483,6 @@ Every rule should be understandable and defensible in a viva.
 ## ⏸ PAUSE-AND-REPORT CHECKPOINT — END OF WEEK 3
 
 Report:
-
 1. Supported sentence patterns for both ASL and ISL.
 2. Rules implemented across both languages.
 3. Example transformations (ASL and ISL).
@@ -489,12 +496,11 @@ Do not claim unrestricted natural-language translation.
 
 ---
 
-# WEEK 4 — FASTAPI AND SYSTEM INTEGRATION PREPARATION
+# WEEK 4 — FASTAPI AND SYSTEM INTEGRATION PREPARATION (Sep 12 – Sep 19, 2026)
 
 ## Goals
 
 Prepare clean integration points between:
-
 ```text
 Recognition (ASL / ISL)
 ↓
@@ -509,6 +515,12 @@ WebSocket/API Response
 Frontend
 ```
 
+### Granular Sub-Tasks:
+- **Sub-task 4.1 — FastAPI Multi-Language Endpoint Architecture**: Design backend routing to accept `language="ASL"` and `language="ISL"` parameters across REST and WebSocket feeds.
+- **Sub-task 4.2 — Sequence Buffer Backend Integration**: Wire sequence buffer and sentence processor into FastAPI request-response lifecycle.
+- **Sub-task 4.3 — Mock Recognition Data Harness for Independent Testing**: Implement mock sign token generators simulating realistic ASL and ISL sequence streams.
+- **Sub-task 4.4 — Automated Backend Integration Test Suite**: Implement integration tests verifying end-to-end token flow from endpoint input to formatted sentence response.
+
 Inspect the current FastAPI architecture carefully.
 
 Prefer adding small, clean integration points rather than rewriting the backend.
@@ -518,7 +530,6 @@ Coordinate shared changes with the contributor responsible for real-time recogni
 ## Requirements
 
 If the final ML models are not yet available:
-
 - Use clearly labelled mock inputs for development and testing across both ASL and ISL.
 - Never present mock recognition as actual AI performance.
 
@@ -537,7 +548,6 @@ The sentence-processing layer should be independently testable for both sign lan
 ## ⏸ PAUSE-AND-REPORT CHECKPOINT — END OF WEEK 4
 
 Report:
-
 1. Current integration architecture (supporting ASL and ISL).
 2. Exact integration points added or proposed.
 3. Whether the real recognition contributors can now provide tokens directly for both languages.
@@ -547,11 +557,17 @@ Report:
 
 ---
 
-# WEEK 5 — SPEECH FLOW AND FRONTEND CONNECTION
+# WEEK 5 — SPEECH FLOW AND FRONTEND CONNECTION (Sep 20 – Sep 26, 2026)
 
 ## Goals
 
 Ensure the application speaks the **final processed sentence**, not raw sign tokens, for both ASL and ISL.
+
+### Granular Sub-Tasks:
+- **Sub-task 5.1 — Browser Speech Synthesis Alignment**: Connect browser `window.speechSynthesis` to speak final processed sentences rather than raw sign tokens.
+- **Sub-task 5.2 — Multimodal Subtitle & UI Display Rendering**: Render processed sentence transcript in live UI subtitles, video overlay, and chat transcript panel.
+- **Sub-task 5.3 — State Reset & History Replay Controls**: Implement `Clear` and `Replay` button handlers resetting sequence buffers and re-triggering TTS on demand.
+- **Sub-task 5.4 — Dual-Language Voice Selection & Locale Handling**: Support localized speech voices (e.g. `en-US` for ASL, `en-IN` for ISL) where supported by the browser.
 
 The existing application already uses:
 
@@ -582,7 +598,6 @@ Replay / Clear
 ## Tasks
 
 Inspect and improve the connection between:
-
 - Processed sentence (ASL and ISL)
 - Frontend display and subtitle rendering
 - Speech synthesis (with language/voice selection where available)
@@ -606,7 +621,6 @@ Focus on functional correctness.
 ## ⏸ PAUSE-AND-REPORT CHECKPOINT — END OF WEEK 5
 
 Report:
-
 1. Whether processed sentences reach the frontend correctly for both ASL and ISL.
 2. Whether speech uses processed sentences across both language modes.
 3. Clear/replay behavior.
@@ -616,18 +630,22 @@ Report:
 
 ---
 
-# WEEK 6 — TESTING AND END-TO-END INTEGRATION SUPPORT
+# WEEK 6 — TESTING AND END-TO-END INTEGRATION SUPPORT (Sep 27 – Oct 03, 2026)
 
 ## Goals
 
 Strengthen the system testing strategy across both ASL and ISL.
 
+### Granular Sub-Tasks:
+- **Sub-task 6.1 — Comprehensive NLP Unit Test Suite**: Implement unit tests covering token normalization, ASL grammar rules, ISL SOV adjustments, and phrase mapping lexicons.
+- **Sub-task 6.2 — Full Pipeline Integration Tests**: Test end-to-end pipeline: recognition tokens $\to$ sequence buffer $\to$ sentence processor $\to$ backend API $\to$ frontend.
+- **Sub-task 6.3 — Static Model Integration with Contributor 1**: Integrate Contributor 1's `StaticSignPredictor` into backend `/predict_frame` with dual ASL/ISL language support.
+- **Sub-task 6.4 — Software Correctness vs Model Accuracy Separation**: Create distinct test suites distinguishing software pipeline integrity from ML classifier evaluation.
+
 Clearly separate:
 
 ### Unit Tests
-
 Test:
-
 - Sentence processing (ASL and ISL grammar rules)
 - Token normalization & language tagging
 - Grammar rules (ASL topic-comment, ISL SOV adjustments)
@@ -635,9 +653,7 @@ Test:
 - API contracts
 
 ### Integration Tests
-
 Test:
-
 ```text
 Recognition Output (ASL / ISL)
 ↓
@@ -651,7 +667,6 @@ Frontend
 ```
 
 ### Model Evaluation
-
 Contributor 1 and Contributor 2 own ML model evaluation.
 
 Do not confuse software tests with recognition accuracy.
@@ -674,7 +689,6 @@ Where possible, create controlled integration tests using known sign tokens from
 ## ⏸ PAUSE-AND-REPORT CHECKPOINT — END OF WEEK 6
 
 Report:
-
 1. Tests added (ASL and ISL).
 2. Tests passing.
 3. Tests failing.
@@ -685,16 +699,21 @@ Report:
 
 ---
 
-# WEEK 7 — SYSTEM EVALUATION FRAMEWORK AND ROBUSTNESS
+# WEEK 7 — SYSTEM EVALUATION FRAMEWORK AND ROBUSTNESS (Oct 04 – Oct 10, 2026)
 
 ## Goals
 
 Prepare and execute the overall system evaluation framework where the required components are available for both ASL and ISL.
 
+### Granular Sub-Tasks:
+- **Sub-task 7.1 — Automated System Metrics Collector (`evaluation/system_metrics.py`)**: Implement harness measuring per-frame latency, FPS throughput, and memory utilization on CPU.
+- **Sub-task 7.2 — End-to-End Latency Benchmarking**: Profile unimanual ASL latency vs bimanual ISL latency under continuous WebSocket load ($\le 30\text{ ms}$).
+- **Sub-task 7.3 — Real-World Multi-Environment Robustness Suite**: Execute system evaluation across varying lighting, background clutter, camera distances, and user geometries.
+- **Sub-task 7.4 — Sentence-Level Semantic Fidelity Evaluation**: Evaluate whether converted sentences accurately preserve source sign intent without hallucinations.
+
 The eventual system should evaluate:
 
 ### ML Metrics
-
 - Accuracy
 - Precision
 - Recall
@@ -704,17 +723,13 @@ The eventual system should evaluate:
 These are primarily owned by the ML contributors for both ASL and ISL models.
 
 ### System Metrics
-
 Measure where possible:
-
 - Inference latency (single-hand ASL vs dual-hand ISL)
 - FPS across both pipelines
 - End-to-end response time
 
 ### Robustness
-
 Where practical, test across both ASL (unimanual) and ISL (bimanual):
-
 - Different users
 - Different lighting
 - Different backgrounds
@@ -722,13 +737,10 @@ Where practical, test across both ASL (unimanual) and ISL (bimanual):
 - Different orientations and inter-hand occlusions (ISL)
 
 ### Sentence-Level Evaluation
-
 Evaluate whether:
-
 ```text
 Recognized Sign Sequence (ASL / ISL)
 ```
-
 is transformed into a sentence that preserves the intended meaning.
 
 Do not fabricate metrics.
@@ -738,17 +750,14 @@ If a component is incomplete, explicitly document that the evaluation could not 
 ## Deliverables
 
 Create:
-
 ```text
 evaluation/
 ├── system_metrics.py
 └── evaluation_plan.md
 ```
-
 or an equivalent clean structure.
 
 Document:
-
 - What is measured
 - How it is measured
 - Which contributor owns each metric
@@ -760,7 +769,6 @@ Document:
 ## ⏸ PAUSE-AND-REPORT CHECKPOINT — END OF WEEK 7
 
 Report:
-
 1. Evaluation framework completed.
 2. Actual metrics collected for both ASL and ISL.
 3. Metrics still unavailable.
@@ -770,21 +778,25 @@ Report:
 7. Any limitations discovered during testing.
 
 Clearly label all results as:
-
 - Implemented and tested
 - Implemented but not fully evaluated
 - Planned but incomplete
 
 ---
 
-# WEEK 8 — FINAL INTEGRATION, VALIDATION AND DOCUMENTATION
+# WEEK 8 — FINAL INTEGRATION, VALIDATION AND DOCUMENTATION (Oct 11 – Oct 18, 2026)
 
 ## Goals
 
 Support final end-to-end integration of the UNMUTE system across both ASL and ISL.
 
-The intended overall flow is:
+### Granular Sub-Tasks:
+- **Sub-task 8.1 — End-to-End System Release Validation**: Run comprehensive system validation across all live camera feeds, practice studio challenges, and video subtitle generation.
+- **Sub-task 8.2 — Final Test Suite Execution & Coverage Report**: Execute full integration and unit test suite verifying zero failures across all modules.
+- **Sub-task 8.3 — Project-Wide Evaluation Report Compilation**: Author `reports/final_evaluation_report.md` compiling system throughput, ML metrics, and user experience metrics.
+- **Sub-task 8.4 — Final Handover & Deployment Documentation**: Update `README.md` and operational runbooks with complete instructions for installation, testing, and deployment.
 
+The intended overall flow is:
 ```text
 Webcam
 ↓
@@ -810,7 +822,6 @@ Browser Speech
 Do not claim that the system performs unrestricted ASL or ISL translation unless this has genuinely been implemented and evaluated.
 
 ## Tasks
-
 1. Verify integration with both static and dynamic recognition contributors for both ASL and ISL.
 2. Test supported end-to-end sequences in both language modes.
 3. Verify sentence formation across both languages.
@@ -822,7 +833,6 @@ Do not claim that the system performs unrestricted ASL or ISL translation unless
 ## Final Deliverables
 
 Provide:
-
 1. Current text accumulation audit.
 2. Structured token interface specification (handling ASL and ISL).
 3. Rule-based sentence processor supporting both languages.
