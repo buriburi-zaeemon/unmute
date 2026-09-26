@@ -613,12 +613,33 @@ At this point, the team should be able to decide whether the static models are s
 
 ---
 
-## WEEK 6 — Integration Preparation
+## WEEK 6 — Integration Preparation (Sep 27 – Oct 03, 2026)
 
 Focus on preparing the static models for the contributor responsible for backend integration.
 
-Provide:
+### Granular Sub-Tasks:
+- **Sub-task 6.1 — Unified Static Sign Predictor (`ml/inference/static_predictor.py`)**:
+  - Implement factory loader for `StaticASL_MLP` and `StaticISL_MLP` models with automatic device selection (`CPU` / `CUDA`).
+  - Implement standardized `.predict()` and `.predict_proba()` returning canonical sign labels, top-k candidate rankings, and softmax probabilities.
+  - Ensure lightweight inference dependency isolation decoupled from training modules.
+- **Sub-task 6.2 — Language Mode Routing & Feature Dimension Validator**:
+  - Add strict input dimensionality validation (109 dims for ASL, 228 dims for ISL).
+  - Add explicit dual-mode switcher (`mode="ASL"` vs `mode="ISL"`).
+  - Add graceful single-hand fallback adapter for ISL with zero-padding and fallback indicator flag.
+- **Sub-task 6.3 — Confidence Thresholding & Out-of-Distribution Rejection**:
+  - Configure minimum confidence threshold ($\tau = 0.65$ default) to filter ambiguous or transitional frames.
+  - Return `"UNKNOWN"` token when model confidence falls below threshold.
+- **Sub-task 6.4 — Minimal Integration Contracts & Client Examples**:
+  - Create self-contained inference script (`ml/inference/example_usage.py`) demonstrating ASL and ISL model invocation from raw MediaPipe coordinates.
+  - Document JSON request/response schema specifications for Contributor 3 and FastAPI endpoints.
+- **Sub-task 6.5 — Automated Inference Test Suite (`tests/test_inference.py`)**:
+  - Add unit tests for `StaticSignPredictor` on single-hand and dual-hand input tensors.
+  - Add unit tests for confidence thresholding, unknown gesture handling, and fallback behavior.
+- **Sub-task 6.6 — Validation & Squash-Merge Workflow**:
+  - Execute full regression test suite (`pytest tests/ -v`).
+  - Squash-merge into `main`, verify, and push all branches according to policy.
 
+Provide:
 - Saved PyTorch model checkpoints (`asl_static_mlp.pt` and `isl_static_mlp.pt`).
 - Label mappings for both ASL and ISL.
 - Model-loading instructions for both models.
@@ -633,7 +654,6 @@ Do not heavily modify the backend unless explicitly coordinated with the backend
 ### ⏸ PAUSE-AND-REPORT CHECKPOINT — END OF WEEK 6
 
 Stop and report:
-
 - Integration readiness status for both ASL and ISL models.
 - Exact files required by the backend contributor.
 - Example inference code for both languages.
@@ -643,24 +663,32 @@ Stop and report:
 
 ---
 
-## WEEK 7 — Integration Support & Real-World Testing
+## WEEK 7 — Integration Support & Real-World Testing (Oct 04 – Oct 10, 2026)
 
 Coordinate with the contributor integrating the model into the real-time system.
 
-Focus on:
-
-- Supporting backend integration for both ASL and ISL pipelines.
-- Verifying that live MediaPipe features match training features (single-hand 109 dims for ASL, dual-hand 228 dims for ISL).
-- Testing real-time predictions in both ASL and ISL live modes.
-- Identifying training-versus-inference preprocessing mismatches across both languages.
-- Testing with different users where possible on both unimanual and bimanual signs.
+### Granular Sub-Tasks:
+- **Sub-task 7.1 — Feature Engineering & Preprocessing Alignment Verification**:
+  - Verify 100% parity between live MediaPipe feature extraction (`sign_engine/feature_engineering.py`) and training preprocessing.
+  - Benchmark per-frame end-to-end inference latency ($\le 10\text{ ms}$ target on CPU).
+- **Sub-task 7.2 — Backend FastAPI Integration Support**:
+  - Support Contributor 3 in integrating `StaticSignPredictor` into `/predict_frame` endpoint with `language` selector (`ASL` vs `ISL`).
+  - Verify HTTP and WebSocket payload compatibility with live video frame loop.
+- **Sub-task 7.3 — Real-World Robustness & Diverse Geometry Testing**:
+  - Test live recognition across diverse hand geometries, skin tones, distances, and lighting conditions.
+  - Test live unimanual and bimanual signs stability in real-time camera feed.
+- **Sub-task 7.4 — Error Boundary Hardening & Temporal Smoothing**:
+  - Handle missing hand / intermittent tracking loss edge cases in live video stream.
+  - Implement temporal hysteresis smoothing buffer to prevent single-frame prediction flicker.
+- **Sub-task 7.5 — Validation & Squash-Merge Workflow**:
+  - Run full regression test suite (`pytest tests/ -v`).
+  - Squash-merge into `main`, verify, and push.
 
 Do not claim signer-independent performance unless the evaluation design genuinely supports that claim.
 
 ### ⏸ PAUSE-AND-REPORT CHECKPOINT — END OF WEEK 7
 
 Stop and report:
-
 - Whether the trained ASL and ISL MLPs successfully run in the real-time pipeline.
 - Any integration bugs encountered in either language mode.
 - Training-versus-live feature compatibility for 1-hand and 2-hand detection.
@@ -670,10 +698,25 @@ Stop and report:
 
 ---
 
-## WEEK 8 — Final Evaluation & Handover
+## WEEK 8 — Final Evaluation & Handover (Oct 11 – Oct 18, 2026)
+
+### Granular Sub-Tasks:
+- **Sub-task 8.1 — Comprehensive Final Model Evaluation**:
+  - Run exhaustive evaluation across final test splits for both ASL and ISL.
+  - Generate final high-resolution confusion matrix heatmaps and per-class metrics.
+- **Sub-task 8.2 — Codebase Cleanup & Reproducibility Verification**:
+  - Remove transient debug scripts, scratch files, and non-essential logs while preserving gold checkpoints.
+  - Verify end-to-end reproducibility of dataset preparation and training scripts.
+- **Sub-task 8.3 — Comprehensive Contributor 1 Handover Documentation**:
+  - Author formal handover documentation (`reports/contributor_1_handover.md`) detailing architecture, checkpoints, and integration API.
+  - Update `README.md` with complete model usage, dual-language capabilities, and evaluation benchmarks.
+- **Sub-task 8.4 — System Architecture Finalization**:
+  - Update `architecture.puml` reflecting the complete dual-language production inference pipeline with constant title and 100% unique arrow colors.
+- **Sub-task 8.5 — Final Validation & Release Merge**:
+  - Run full regression test suite (`pytest tests/ -v`).
+  - Perform final squash-merge into `main`, verify, and push.
 
 Focus on:
-
 - Final model evaluation for both ASL and ISL.
 - Documenting actual results for both languages.
 - Cleaning unnecessary experimental files.
