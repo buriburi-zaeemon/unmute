@@ -88,52 +88,62 @@ Direct development on `main` is strictly prohibited. Branching is mandatory to e
 - **Each Branch Tracks Its Own History**: Contributor branches (`contributor-1-ml-foundation`, `contributor-2-dynamic-nlp`, `contributor-3-nlp-integration`) track their own independent development history. Do not cross-merge other contributor branches into your branch; if another contributor's branch is empty or not yet active, leave it untouched.
 - **`main` Is the Combined Source of Truth**: The `main` branch serves as the single unified source of truth combining verified, tested contributions from all branches.
 
-### Required Cyclic Step-by-Step Workflow:
+### Required Cyclic Step-by-Step Workflow (Squash-Merge Default Policy):
 
-1. **Pull All Branches (Remote Sync & Upstream Merge)**:
-   At the start of every work cycle or new task, fetch all remote refs and pull latest updates for both `main` and your feature branch, then merge `main` into your feature branch to stay synchronized with the combined source of truth:
+1. **Pull Main & Check for Updates**:
+   Before starting any work or new task, fetch all remote refs, switch to `main`, and pull the latest changes to check if any upstream updates exist:
    ```bash
    git fetch --all
    git checkout main
    git pull origin main
-   git checkout contributor-3-nlp-integration
-   git pull origin contributor-3-nlp-integration
-   git merge main
    ```
 
-2. **Develop & Implement Inside Your Branch**:
+2. **Pull Feature Branch & Squash-Merge Updates from Main**:
+   Switch to your assigned feature branch and pull its remote state. If `main` contains new commits or updates, **squash-merge `main` into your feature branch** and commit with a clean sync message. This guarantees your branch has 100% of the latest upstream codebase baseline and fixes without polluting your branch's commit history with intermediate commits from other contributors:
+   ```bash
+   git checkout contributor-3-nlp-integration
+   git pull origin contributor-3-nlp-integration
+   # Upon seeing updates in main:
+   git merge --squash main
+   git commit -m "chore(sync): squash-sync latest codebase baseline from main"
+   git push origin contributor-3-nlp-integration
+   ```
+
+3. **Develop & Implement Inside Your Branch**:
    Perform all code edits, model training, feature extraction, and experiments exclusively inside your assigned branch. Never edit directly on `main`.
 
-3. **Test Thoroughly Inside Your Branch**:
+4. **Test Thoroughly Inside Your Branch**:
    Run the complete test suite and verify that all unit, regression, and integration tests pass cleanly with zero errors before merging or pushing:
    ```bash
    pytest tests/ -v
    ```
 
-4. **Commit Locally & Push Your Feature Branch**:
-   Commit working units of code on your branch with descriptive, standardized commit messages, and push your feature branch to remote so its history is always backed up:
+5. **Commit Locally & Push Your Feature Branch**:
+   Commit working units of code on your branch with descriptive, standardized commit messages, and push your feature branch to remote so its history is always backed up remotely:
    ```bash
    git add <modified-files>
    git commit -m "feat/fix/docs(<scope>): clear description of work done"
    git push origin contributor-3-nlp-integration
    ```
 
-5. **Merge into `main` Only When Everything Works**:
-   Only after all tasks are completed, tested, and verified to be 100% functional, switch to `main` and merge your feature branch:
+6. **Squash-Merge into `main` When Ready to Push**:
+   Only after all tasks are completed, tested, and verified to be 100% functional, switch to `main`, pull any fresh changes, and **squash-merge your feature branch into `main`** to maintain a clean, high-signal commit history on `main`:
    ```bash
    git checkout main
-   git merge contributor-3-nlp-integration
+   git pull origin main
+   git merge --squash contributor-3-nlp-integration
+   git commit -m "feat/fix(<scope>): summary of completed milestone"
    pytest tests/ -v  # Final sanity check on main
    ```
 
-6. **Push `main` to Remote**:
-   Once the merge to `main` is validated and all tests pass without errors, push the updated `main` branch to remote origin:
+7. **Push `main` to Remote**:
+   Once the squash-merge to `main` is validated and all tests pass without errors, push the updated `main` branch to remote origin:
    ```bash
    git push origin main
    ```
 
-7. **Repeat Cycle for Every New Task**:
-   When beginning the next task, repeat this exact loop: fetch and pull all branches (`main` and your feature branch), merge `main` into your feature branch, work, test, commit & push your feature branch, merge to `main`, and push `main`. All branches must always be pushed and pulled, not just `main`.
+8. **Repeat Cycle for Every New Task (All Branches Always Pushed & Pulled)**:
+   When beginning the next task, repeat this exact loop: pull `main`, inspect updates, squash-merge `main` into your feature branch, work, test, commit & push your feature branch, squash-merge to `main`, and push `main`. All branches must always be pushed and pulled, not just `main`.
 
 ### Why This Is Mandatory:
 - **All Branches Always Pushed & Pulled**: Pushing and pulling both your feature branch and `main` ensures that individual branch histories are preserved remotely, while `main` continuously reflects the combined, working source of truth.
