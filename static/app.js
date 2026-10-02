@@ -1965,8 +1965,15 @@ class UnmuteApp {
   }
 
   drawLandmarks() {
+    if (this.video && this.video.videoWidth && this.video.videoHeight) {
+      if (this.canvas.width !== this.video.videoWidth || this.canvas.height !== this.video.videoHeight) {
+        this.canvas.width = this.video.videoWidth;
+        this.canvas.height = this.video.videoHeight;
+      }
+    }
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-    if (!this.toggleSkeleton.checked || !this.latestLandmarks) return;
+    if (this.toggleSkeleton && !this.toggleSkeleton.checked) return;
+    if (!this.latestLandmarks) return;
 
     const w = this.canvas.width;
     const h = this.canvas.height;
