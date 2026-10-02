@@ -1879,6 +1879,10 @@ class UnmuteApp {
   startStreamingLoop() {
     const offscreen = document.createElement("canvas");
     const offCtx = offscreen.getContext("2d");
+    offscreen.width = 320;
+    offscreen.height = 240;
+
+    let isProcessingFrame = false;
 
     const render = async (now) => {
       if (!this.isCameraRunning || this.activeTab !== "camera-tab") return;
@@ -1893,55 +1897,38 @@ class UnmuteApp {
 
       this.drawLandmarks();
 
-      // Reset in-flight lock if stuck for > 1500ms
-      if (this.isFrameInFlight && (now - this.lastFrameSendTime > 1500)) {
-        this.isFrameInFlight = false;
-      }
+      if (!isProcessingFrame && this.video && this.video.readyState >= 2) {
+        const timeSinceLastSend = now - this.lastFrameSendTime;
+        const minInterval = this.minFrameIntervalMs || 60;
 
-      const timeSinceLastSend = now - this.lastFrameSendTime;
-      const minInterval = this.minFrameIntervalMs || 60;
+        if (timeSinceLastSend >= minInterval) {
+          isProcessingFrame = true;
+          this.lastFrameSendTime = now;
 
-      if (!this.isFrameInFlight && timeSinceLastSend >= minInterval) {
-        this.isFrameInFlight = true;
-        this.lastFrameSendTime = now;
-
-        const streamW = this.video.videoWidth || 640;
-        const streamH = this.video.videoHeight || 480;
-        if (offscreen.width !== streamW || offscreen.height !== streamH) {
-          offscreen.width = streamW;
-          offscreen.height = streamH;
-        }
-
-        offCtx.drawImage(this.video, 0, 0, offscreen.width, offscreen.height);
-
-        if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-          offscreen.toBlob((blob) => {
-            if (blob && this.ws && this.ws.readyState === WebSocket.OPEN) {
-              this.ws.send(blob);
-            } else {
-              this.isFrameInFlight = false;
-            }
-          }, "image/jpeg", 0.80);
-        } else {
-          // REST Fallback if WebSocket is not open
           try {
-            const base64Data = offscreen.toDataURL("image/jpeg", 0.75);
+            offCtx.drawImage(this.video, 0, 0, offscreen.width, offscreen.height);
+            const base64Data = offscreen.toDataURL("image/jpeg", 0.60);
+
             const res = await fetch("/api/predict-frame", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
                 image_base64: base64Data,
-                session_id: "live_camera_rest_session"
+                session_id: "live_camera_session"
               }),
             });
+
             if (res.ok) {
               const data = await res.json();
               this.handlePredictionResult(data);
+              if (this.hudLatency) {
+                this.hudLatency.textContent = `${Math.round(performance.now() - now)}ms`;
+              }
             }
           } catch (e) {
-            console.error("REST predict-frame fallback error:", e);
+            console.error("Live predict-frame error:", e);
           } finally {
-            this.isFrameInFlight = false;
+            isProcessingFrame = false;
           }
         }
       }
