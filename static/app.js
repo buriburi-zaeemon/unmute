@@ -1426,6 +1426,7 @@ class UnmuteApp {
     this.setupEventListeners();
     this.initDictionary();
     this.initCustomGestures();
+    this.startCamera();
   }
 
   initDOMElements() {
@@ -1784,21 +1785,31 @@ class UnmuteApp {
       return;
     }
     try {
-      this.stream = await navigator.mediaDevices.getUserMedia({
-        video: { width: { ideal: 640 }, height: { ideal: 480 }, frameRate: { ideal: 30 } },
-        audio: false,
-      });
+      if (!this.stream) {
+        this.stream = await navigator.mediaDevices.getUserMedia({
+          video: { width: { ideal: 640 }, height: { ideal: 480 }, frameRate: { ideal: 30 } },
+          audio: false,
+        });
+      }
       this.video.srcObject = this.stream;
-      this.video.onloadedmetadata = () => {
-        this.video.play();
+      await this.video.play().catch(() => {});
+
+      const onReady = () => {
+        if (this.isCameraRunning) return;
         this.canvas.width = this.video.videoWidth || 640;
         this.canvas.height = this.video.videoHeight || 480;
         this.isCameraRunning = true;
-        this.cameraPlaceholder.style.display = "none";
-        this.camToggleIcon.textContent = "⏹️";
-        this.initWebSocket();
+        if (this.cameraPlaceholder) this.cameraPlaceholder.style.display = "none";
+        if (this.camToggleIcon) this.camToggleIcon.textContent = "⏹️";
         this.startStreamingLoop();
       };
+
+      if (this.video.readyState >= 1) {
+        onReady();
+      } else {
+        this.video.onloadedmetadata = onReady;
+        this.video.onloadeddata = onReady;
+      }
     } catch (err) {
       console.error("Camera access error:", err);
       showToast("Could not access camera. Please allow camera permissions.", "error");
