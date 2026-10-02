@@ -1426,6 +1426,7 @@ class UnmuteApp {
     this.setupEventListeners();
     this.initDictionary();
     this.initCustomGestures();
+    this.startCamera();
   }
 
   initDOMElements() {
@@ -1784,21 +1785,31 @@ class UnmuteApp {
       return;
     }
     try {
-      this.stream = await navigator.mediaDevices.getUserMedia({
-        video: { width: { ideal: 640 }, height: { ideal: 480 }, frameRate: { ideal: 30 } },
-        audio: false,
-      });
+      if (!this.stream) {
+        this.stream = await navigator.mediaDevices.getUserMedia({
+          video: { width: { ideal: 640 }, height: { ideal: 480 }, frameRate: { ideal: 30 } },
+          audio: false,
+        });
+      }
       this.video.srcObject = this.stream;
-      this.video.onloadedmetadata = () => {
-        this.video.play();
+      await this.video.play().catch(() => {});
+
+      const onReady = () => {
+        if (this.isCameraRunning) return;
         this.canvas.width = this.video.videoWidth || 640;
         this.canvas.height = this.video.videoHeight || 480;
         this.isCameraRunning = true;
-        this.cameraPlaceholder.style.display = "none";
-        this.camToggleIcon.textContent = "⏹️";
-        this.initWebSocket();
+        if (this.cameraPlaceholder) this.cameraPlaceholder.style.display = "none";
+        if (this.camToggleIcon) this.camToggleIcon.textContent = "⏹️";
         this.startStreamingLoop();
       };
+
+      if (this.video.readyState >= 1) {
+        onReady();
+      } else {
+        this.video.onloadedmetadata = onReady;
+        this.video.onloadeddata = onReady;
+      }
     } catch (err) {
       console.error("Camera access error:", err);
       showToast("Could not access camera. Please allow camera permissions.", "error");
@@ -1855,6 +1866,11 @@ class UnmuteApp {
         }
       };
 
+      this.ws.onerror = (err) => {
+        console.warn("WebSocket error, resetting in-flight flag:", err);
+        this.isFrameInFlight = false;
+      };
+
       this.ws.onclose = () => {
         const statusEl = document.getElementById("server-status");
         if (statusEl) {
@@ -1874,10 +1890,12 @@ class UnmuteApp {
   startStreamingLoop() {
     const offscreen = document.createElement("canvas");
     const offCtx = offscreen.getContext("2d");
-    offscreen.width = 256;
-    offscreen.height = 192;
+    offscreen.width = 320;
+    offscreen.height = 240;
 
-    const render = (now) => {
+    let isProcessingFrame = false;
+
+    const render = async (now) => {
       if (!this.isCameraRunning || this.activeTab !== "camera-tab") return;
 
       this.frameCount++;
@@ -1890,19 +1908,40 @@ class UnmuteApp {
 
       this.drawLandmarks();
 
-      const timeSinceLastSend = now - this.lastFrameSendTime;
-      if (this.ws && this.ws.readyState === WebSocket.OPEN && !this.isFrameInFlight && timeSinceLastSend >= this.minFrameIntervalMs) {
-        this.isFrameInFlight = true;
-        this.lastFrameSendTime = now;
+      if (!isProcessingFrame && this.video && this.video.readyState >= 2) {
+        const timeSinceLastSend = now - this.lastFrameSendTime;
+        const minInterval = this.minFrameIntervalMs || 60;
 
-        offCtx.drawImage(this.video, 0, 0, offscreen.width, offscreen.height);
-        offscreen.toBlob((blob) => {
-          if (blob && this.ws && this.ws.readyState === WebSocket.OPEN) {
-            this.ws.send(blob);
-          } else {
-            this.isFrameInFlight = false;
+        if (timeSinceLastSend >= minInterval) {
+          isProcessingFrame = true;
+          this.lastFrameSendTime = now;
+
+          try {
+            offCtx.drawImage(this.video, 0, 0, offscreen.width, offscreen.height);
+            const base64Data = offscreen.toDataURL("image/jpeg", 0.60);
+
+            const res = await fetch("/api/predict-frame", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                image_base64: base64Data,
+                session_id: "live_camera_session"
+              }),
+            });
+
+            if (res.ok) {
+              const data = await res.json();
+              this.handlePredictionResult(data);
+              if (this.hudLatency) {
+                this.hudLatency.textContent = `${Math.round(performance.now() - now)}ms`;
+              }
+            }
+          } catch (e) {
+            console.error("Live predict-frame error:", e);
+          } finally {
+            isProcessingFrame = false;
           }
-        }, "image/jpeg", 0.50);
+        }
       }
 
       requestAnimationFrame(render);
@@ -1960,8 +1999,15 @@ class UnmuteApp {
   }
 
   drawLandmarks() {
+    if (this.video && this.video.videoWidth && this.video.videoHeight) {
+      if (this.canvas.width !== this.video.videoWidth || this.canvas.height !== this.video.videoHeight) {
+        this.canvas.width = this.video.videoWidth;
+        this.canvas.height = this.video.videoHeight;
+      }
+    }
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-    if (!this.toggleSkeleton.checked || !this.latestLandmarks) return;
+    if (this.toggleSkeleton && !this.toggleSkeleton.checked) return;
+    if (!this.latestLandmarks) return;
 
     const w = this.canvas.width;
     const h = this.canvas.height;
