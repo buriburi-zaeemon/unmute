@@ -1874,8 +1874,6 @@ class UnmuteApp {
   startStreamingLoop() {
     const offscreen = document.createElement("canvas");
     const offCtx = offscreen.getContext("2d");
-    offscreen.width = 256;
-    offscreen.height = 192;
 
     const render = (now) => {
       if (!this.isCameraRunning || this.activeTab !== "camera-tab") return;
@@ -1895,6 +1893,13 @@ class UnmuteApp {
         this.isFrameInFlight = true;
         this.lastFrameSendTime = now;
 
+        const streamW = this.video.videoWidth || 640;
+        const streamH = this.video.videoHeight || 480;
+        if (offscreen.width !== streamW || offscreen.height !== streamH) {
+          offscreen.width = streamW;
+          offscreen.height = streamH;
+        }
+
         offCtx.drawImage(this.video, 0, 0, offscreen.width, offscreen.height);
         offscreen.toBlob((blob) => {
           if (blob && this.ws && this.ws.readyState === WebSocket.OPEN) {
@@ -1902,7 +1907,7 @@ class UnmuteApp {
           } else {
             this.isFrameInFlight = false;
           }
-        }, "image/jpeg", 0.50);
+        }, "image/jpeg", 0.80);
       }
 
       requestAnimationFrame(render);
