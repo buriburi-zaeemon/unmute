@@ -2012,7 +2012,10 @@ class UnmuteApp {
       // Upgrade/replace transient hand-entry motion commits with target stable signs
       if (this.hasCommittedInCurrentHandPresence) {
         if (timeSinceLastCommit < 2000 && isStable && sign !== this.lastCommittedSignName) {
-          if (signType === "phrase" || sign.length > 1 || conf >= 0.60) {
+          const isPrevSingleLetter = (this.lastCommittedSignName && this.lastCommittedSignName.length === 1);
+          const isNewPhraseOrHigherConf = (signType === "phrase" || sign.length > 1 || conf > (this.lastCommittedConf + 0.15));
+
+          if (isPrevSingleLetter && isNewPhraseOrHigherConf && conf >= 0.60) {
             this.replaceLastCommittedWord(sign);
             this.lastCommittedSignName = sign;
             this.lastCommittedConf = conf;
@@ -2119,16 +2122,31 @@ class UnmuteApp {
   }
 
   replaceLastCommittedWord(newSign) {
+    const oldSign = this.lastCommittedSignName;
     if (!this.composedSentence || this.composedSentence === "Show a sign to begin translating...") {
       this.composedSentence = newSign + " ";
-    } else {
-      let text = this.composedSentence.trimEnd();
-      const lastSpace = text.lastIndexOf(" ");
-      if (lastSpace !== -1) {
-        this.composedSentence = text.substring(0, lastSpace + 1) + newSign + " ";
-      } else {
-        this.composedSentence = newSign + " ";
+      this.updateSentenceUI();
+      return;
+    }
+
+    let text = this.composedSentence.trimEnd();
+
+    if (oldSign) {
+      const oldSignTrimmed = oldSign.trim();
+      if (text.endsWith(oldSignTrimmed)) {
+        const prefix = text.slice(0, text.length - oldSignTrimmed.length).trimEnd();
+        this.composedSentence = (prefix ? prefix + " " : "") + newSign + " ";
+        this.updateSentenceUI();
+        return;
       }
+    }
+
+    // Fallback: strip last space-delimited word if oldSign does not match exact tail
+    const lastSpace = text.lastIndexOf(" ");
+    if (lastSpace !== -1) {
+      this.composedSentence = text.substring(0, lastSpace + 1) + newSign + " ";
+    } else {
+      this.composedSentence = newSign + " ";
     }
     this.updateSentenceUI();
   }
