@@ -86,7 +86,7 @@ class ASLClassifier:
         phalanx_align = float(np.dot(v_prox, v_dist) / (norm_prox * norm_dist)) if (norm_prox > 1e-5 and norm_dist > 1e-5) else 0.0
 
         # Straightness condition: chord ratio > 0.60 (curled in fist is < 0.40), straight PIP joint, and aligned distal phalanx
-        is_straight = (straight_ratio > 0.60) and (pip_angle > 115.0 or straight_ratio > 0.70 or ext_score > 0.48) and (phalanx_align > 0.35)
+        is_straight = (straight_ratio > 0.60) and (pip_angle > 110.0 or (straight_ratio > 0.72 and ext_score > 0.58)) and (phalanx_align > 0.30)
 
         # Orientation condition: pointing outward along hand axis and upright in image plane
         is_upright = (d_tip_wrist > d_pip_wrist * 0.95) and (proj_tip > -0.06) and y_upright
@@ -212,6 +212,12 @@ class ASLClassifier:
             candidates.append(("OKAY", 0.96))
             candidates.append(("9", 0.92))
 
+        # === 3B.2. INDEX + PINKY EXCEPTION: 'I LOVE YOU' ===
+        # Index and Pinky extended UP, while Middle and Ring fingers are curled (ext[2] < 0.62 and ext[3] < 0.62)
+        elif (index_up or ext[1] > 0.50) and (pinky_up or ext[4] > 0.50) and ext[2] < 0.62 and ext[3] < 0.62:
+            candidates.append(("I LOVE YOU", 0.97))
+            candidates.append(("Y", 0.82))
+
         # === 3C. CATEGORICAL BRANCHING BY EXTENDED FINGER COUNT (up_count) ===
         # --- FOUR FINGERS UP (Index, Middle, Ring, Pinky) ---
         elif up_count == 4:
@@ -246,6 +252,9 @@ class ASLClassifier:
                 candidates.append(("3", 0.96))
                 candidates.append(("W", 0.86))
             elif thumb_extended and index_up and pinky_up and not middle_up and not ring_up:
+                candidates.append(("I LOVE YOU", 0.97))
+                candidates.append(("Y", 0.82))
+            elif index_up and pinky_up and not middle_up and not ring_up:
                 candidates.append(("I LOVE YOU", 0.97))
                 candidates.append(("Y", 0.82))
             else:
@@ -284,19 +293,17 @@ class ASLClassifier:
                         candidates.append(("V", 0.96))
                         candidates.append(("2", 0.92))
                         candidates.append(("U", 0.80))
-            elif thumb_extended and pinky_up and not index_up and not middle_up and not ring_up:
+            elif pinky_up and not index_up and not middle_up and not ring_up:
                 candidates.append(("Y", 0.96))
                 candidates.append(("I LOVE YOU", 0.82))
-            elif thumb_extended and index_up and pinky_up and not middle_up and not ring_up:
+            elif index_up and pinky_up and not middle_up and not ring_up:
                 candidates.append(("I LOVE YOU", 0.97))
                 candidates.append(("Y", 0.82))
-            elif thumb_extended and index_up and not middle_up and not ring_up and not pinky_up:
+            elif index_up and not middle_up and not ring_up and not pinky_up:
                 candidates.append(("L", 0.96))
                 candidates.append(("D", 0.80))
             else:
-                candidates.append(("V", 0.85))
-                candidates.append(("PEACE", 0.85))
-                candidates.append(("2", 0.80))
+                candidates.append(("UNKNOWN", 0.30))
 
         # --- ONE FINGER UP ---
         elif up_count == 1:
