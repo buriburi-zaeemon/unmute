@@ -255,8 +255,8 @@ class ASLClassifier:
         # --- TWO FINGERS UP ---
         elif up_count == 2:
             if index_up and middle_up and not ring_up and not pinky_up:
-                # Crossed fingers test for 'R'
-                is_crossed = (pts[8][0] > pts[12][0] + 0.01) if handedness == "Right" else (pts[8][0] < pts[12][0] - 0.01)
+                # Crossed fingers test for 'R' (Index tip and Middle tip crossed)
+                is_crossed = (d_t8_t12 < 0.50) and ((pts[8][0] > pts[12][0] + 0.015) if handedness == "Right" else (pts[8][0] < pts[12][0] - 0.015))
                 if is_crossed:
                     candidates.append(("R", 0.96))
                     candidates.append(("U", 0.85))

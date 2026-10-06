@@ -179,7 +179,11 @@ class TemporalGestureTracker:
         if len(recent) < 6:
             return False
 
-        # Open palm check across recent frames
+        # Open palm check across recent frames (ALL 4 fingers must be extended for THANK YOU)
+        last_snap = recent[-1]
+        if last_snap.finger_extensions[3] < 0.45 or last_snap.finger_extensions[4] < 0.45:
+            return False
+
         avg_ext = np.mean([np.mean(s.finger_extensions[1:]) for s in recent[-8:]])
         if avg_ext < 0.50:
             return False
