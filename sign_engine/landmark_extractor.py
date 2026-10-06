@@ -49,7 +49,7 @@ class HandResult:
 class LandmarkExtractor:
     """Wrapper around MediaPipe HandLandmarker for unified single-frame and batch processing."""
 
-    def __init__(self, model_path: Optional[str] = None, max_num_hands: int = 1, min_detection_confidence: float = 0.4):
+    def __init__(self, model_path: Optional[str] = None, max_num_hands: int = 1, min_detection_confidence: float = 0.3):
         if model_path is None:
             # Default model path
             current_dir = os.path.dirname(os.path.abspath(__file__))

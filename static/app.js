@@ -1965,8 +1965,8 @@ class UnmuteApp {
         this.handDisappearedTime = now;
       }
 
-      // Reset hand presence lock ONLY after hand is missing continuously for at least 400ms
-      if (now - this.handDisappearedTime >= 400) {
+      // Reset hand presence lock ONLY after hand is missing continuously for at least 1500ms (1.5 seconds)
+      if (now - this.handDisappearedTime >= 1500) {
         this.hasCommittedInCurrentHandPresence = false;
         this.lastCommittedSignName = null;
       }
