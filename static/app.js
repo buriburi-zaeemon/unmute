@@ -1965,10 +1965,11 @@ class UnmuteApp {
         this.handDisappearedTime = now;
       }
 
-      // Reset hand presence lock ONLY after hand is missing continuously for at least 1500ms (1.5 seconds)
-      if (now - this.handDisappearedTime >= 1500) {
+      // Reset hand presence lock ONLY after hand is missing continuously for at least 600ms
+      if (now - this.handDisappearedTime >= 600) {
         this.hasCommittedInCurrentHandPresence = false;
         this.lastCommittedSignName = null;
+        this.lastCommittedConf = 0;
       }
       return;
     }
@@ -2006,18 +2007,23 @@ class UnmuteApp {
         this.renderConfidenceList(data.top_predictions);
       }
 
-      // =========================================================================
-      // STRICT SINGLE-COMMIT LOCK PER HAND PRESENCE
-      // Once a sign has been committed during this hand presence, NO FURTHER COMMITS
-      // CAN OCCUR UNTIL THE HAND LEAVES THE CAMERA FRAME ENTIRELY!
-      // =========================================================================
+      const timeSinceLastCommit = now - (this.lastCommittedTime || 0);
+
+      // If a sign was committed during hand entry motion, UPGRADE it when hand settles on high confidence sign
       if (this.hasCommittedInCurrentHandPresence) {
+        if (timeSinceLastCommit < 1500 && isStable && conf >= 0.65 && conf >= (this.lastCommittedConf || 0) + 0.10 && sign !== this.lastCommittedSignName) {
+          this.replaceLastCommittedWord(sign);
+          this.lastCommittedSignName = sign;
+          this.lastCommittedConf = conf;
+          this.lastCommittedTime = now;
+        }
         return;
       }
 
       if (isStable && conf >= Math.max(this.activeConfidenceThreshold, 0.45)) {
         this.hasCommittedInCurrentHandPresence = true;
         this.lastCommittedSignName = sign;
+        this.lastCommittedConf = conf;
         this.lastCommittedTime = now;
         this.accumulateSign(sign, signType);
       }
@@ -2108,6 +2114,21 @@ class UnmuteApp {
       this.composedSentence += sign + " ";
       this.updateSentenceUI();
     }
+  }
+
+  replaceLastCommittedWord(newSign) {
+    if (!this.composedSentence || this.composedSentence === "Show a sign to begin translating...") {
+      this.composedSentence = newSign + " ";
+    } else {
+      let text = this.composedSentence.trimEnd();
+      const lastSpace = text.lastIndexOf(" ");
+      if (lastSpace !== -1) {
+        this.composedSentence = text.substring(0, lastSpace + 1) + newSign + " ";
+      } else {
+        this.composedSentence = newSign + " ";
+      }
+    }
+    this.updateSentenceUI();
   }
 
   appendChar(char) {
