@@ -1965,11 +1965,10 @@ class UnmuteApp {
         this.handDisappearedTime = now;
       }
 
-      // Only reset hand presence lock if hand is missing continuously for at least 800ms
-      if (now - this.handDisappearedTime >= 800) {
+      // Reset hand presence lock ONLY after hand is missing continuously for at least 400ms
+      if (now - this.handDisappearedTime >= 400) {
         this.hasCommittedInCurrentHandPresence = false;
         this.lastCommittedSignName = null;
-        this.presenceSignHistory = [];
       }
       return;
     }
@@ -2007,31 +2006,20 @@ class UnmuteApp {
         this.renderConfidenceList(data.top_predictions);
       }
 
-      // Single-commit per hand presence lock & jitter suppression
-      if (isStable && conf >= this.activeConfidenceThreshold) {
-        const timeSinceLastCommit = now - (this.lastCommittedTime || 0);
+      // =========================================================================
+      // STRICT SINGLE-COMMIT LOCK PER HAND PRESENCE
+      // Once a sign has been committed during this hand presence, NO FURTHER COMMITS
+      // CAN OCCUR UNTIL THE HAND LEAVES THE CAMERA FRAME ENTIRELY!
+      // =========================================================================
+      if (this.hasCommittedInCurrentHandPresence) {
+        return;
+      }
 
-        if (!this.hasCommittedInCurrentHandPresence) {
-          if (timeSinceLastCommit >= 1500) {
-            // First stable sign committed in this hand presence
-            this.hasCommittedInCurrentHandPresence = true;
-            this.lastCommittedSignName = sign;
-            this.lastCommittedTime = now;
-            if (!this.presenceSignHistory) this.presenceSignHistory = [];
-            this.presenceSignHistory.push(sign);
-            this.accumulateSign(sign, signType);
-          }
-        } else {
-          // Continuous hand presence on screen: enforce a strict 2.5s window before allowing new distinct signs
-          if (timeSinceLastCommit >= 2500) {
-            if (sign !== this.lastCommittedSignName && (!this.presenceSignHistory || !this.presenceSignHistory.includes(sign)) && conf >= 0.70) {
-              this.lastCommittedSignName = sign;
-              this.lastCommittedTime = now;
-              this.presenceSignHistory.push(sign);
-              this.accumulateSign(sign, signType);
-            }
-          }
-        }
+      if (isStable && conf >= Math.max(this.activeConfidenceThreshold, 0.45)) {
+        this.hasCommittedInCurrentHandPresence = true;
+        this.lastCommittedSignName = sign;
+        this.lastCommittedTime = now;
+        this.accumulateSign(sign, signType);
       }
     }
   }
@@ -2110,14 +2098,15 @@ class UnmuteApp {
       this.appendChar(" ");
     } else if (sign === "BACKSPACE" || sign === "CLEAR") {
       this.backspace();
-    } else if (signType === "phrase" || sign.length > 1) {
+    } else {
+      if (this.composedSentence === "Show a sign to begin translating...") {
+        this.composedSentence = "";
+      }
       if (this.composedSentence && !this.composedSentence.endsWith(" ")) {
         this.composedSentence += " ";
       }
       this.composedSentence += sign + " ";
       this.updateSentenceUI();
-    } else {
-      this.appendChar(sign);
     }
   }
 

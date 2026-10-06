@@ -188,8 +188,8 @@ class ASLClassifier:
             candidates.append(("G", 0.80))
             candidates.append(("P", 0.75))
 
-        # 'H' (Index and Middle fingers pointing horizontally sideways parallel together)
-        elif index_horizontal and middle_horizontal and not ring_up and not pinky_up:
+        # 'H' (Index and Middle fingers extended & pointing horizontally sideways parallel together)
+        elif index_horizontal and middle_horizontal and not ring_up and not pinky_up and not index_hooked:
             candidates.append(("H", 0.96))
             candidates.append(("G", 0.82))
 
