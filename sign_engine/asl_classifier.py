@@ -32,7 +32,7 @@ class RecognitionResult:
 class ASLClassifier:
     """Robust geometric and heuristic classifier for real-time sign recognition."""
 
-    def __init__(self, model_dir: Optional[str] = None, stability_threshold: int = 2):
+    def __init__(self, model_dir: Optional[str] = None, stability_threshold: int = 3):
         self.feature_engineer = FeatureEngineer()
         self.stability_threshold = stability_threshold
         self._history: List[str] = []

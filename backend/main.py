@@ -205,6 +205,7 @@ async def predict_frame(payload: FramePredictRequest):
             sess_id = payload.session_id or "default_rest_session"
             if sess_id in session_trackers:
                 session_trackers[sess_id][0].clear()
+            classifier.reset_buffer()
             return {
                 "has_hands": False,
                 "predicted_sign": None,

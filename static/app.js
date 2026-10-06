@@ -1890,8 +1890,8 @@ class UnmuteApp {
   startStreamingLoop() {
     const offscreen = document.createElement("canvas");
     const offCtx = offscreen.getContext("2d");
-    offscreen.width = 320;
-    offscreen.height = 240;
+    offscreen.width = 640;
+    offscreen.height = 480;
 
     let isProcessingFrame = false;
 
@@ -1918,7 +1918,7 @@ class UnmuteApp {
 
           try {
             offCtx.drawImage(this.video, 0, 0, offscreen.width, offscreen.height);
-            const base64Data = offscreen.toDataURL("image/jpeg", 0.60);
+            const base64Data = offscreen.toDataURL("image/jpeg", 0.80);
 
             const res = await fetch("/api/predict-frame", {
               method: "POST",
@@ -1951,6 +1951,8 @@ class UnmuteApp {
   }
 
   handlePredictionResult(data) {
+    const now = Date.now();
+
     if (!data.has_hands) {
       this.hasHands = false;
       this.latestLandmarks = null;
@@ -1958,9 +1960,22 @@ class UnmuteApp {
       this.floatingBadge.style.display = "none";
       this.activeLetterBadge.textContent = "_";
       this.activeLetterConf.textContent = "0%";
+
+      if (!this.handDisappearedTime) {
+        this.handDisappearedTime = now;
+      }
+
+      // Only reset hand presence lock if hand is missing continuously for at least 800ms
+      if (now - this.handDisappearedTime >= 800) {
+        this.hasCommittedInCurrentHandPresence = false;
+        this.lastCommittedSignName = null;
+        this.presenceSignHistory = [];
+      }
       return;
     }
 
+    // Hand detected! Reset disappearance timer
+    this.handDisappearedTime = null;
     this.hasHands = true;
     this.latestLandmarks = data.landmarks || null;
     if (this.hudHand) this.hudHand.textContent = data.handedness || "Right";
@@ -1992,8 +2007,31 @@ class UnmuteApp {
         this.renderConfidenceList(data.top_predictions);
       }
 
+      // Single-commit per hand presence lock & jitter suppression
       if (isStable && conf >= this.activeConfidenceThreshold) {
-        this.accumulateSign(sign, signType);
+        const timeSinceLastCommit = now - (this.lastCommittedTime || 0);
+
+        if (!this.hasCommittedInCurrentHandPresence) {
+          if (timeSinceLastCommit >= 1500) {
+            // First stable sign committed in this hand presence
+            this.hasCommittedInCurrentHandPresence = true;
+            this.lastCommittedSignName = sign;
+            this.lastCommittedTime = now;
+            if (!this.presenceSignHistory) this.presenceSignHistory = [];
+            this.presenceSignHistory.push(sign);
+            this.accumulateSign(sign, signType);
+          }
+        } else {
+          // Continuous hand presence on screen: enforce a strict 2.5s window before allowing new distinct signs
+          if (timeSinceLastCommit >= 2500) {
+            if (sign !== this.lastCommittedSignName && (!this.presenceSignHistory || !this.presenceSignHistory.includes(sign)) && conf >= 0.70) {
+              this.lastCommittedSignName = sign;
+              this.lastCommittedTime = now;
+              this.presenceSignHistory.push(sign);
+              this.accumulateSign(sign, signType);
+            }
+          }
+        }
       }
     }
   }
@@ -2065,19 +2103,14 @@ class UnmuteApp {
 
   // ================= SENTENCE COMPOSITION & ACCUMULATOR =================
   accumulateSign(sign, signType) {
-    const now = Date.now();
-    if (sign === this.lastCommittedSign && now - this.lastCommittedTime < 1100) {
-      return;
-    }
-
-    this.lastCommittedSign = sign;
-    this.lastCommittedTime = now;
+    // Ignore UNKNOWN or invalid signs
+    if (!sign || sign === "UNKNOWN") return;
 
     if (sign === "SPACE") {
       this.appendChar(" ");
     } else if (sign === "BACKSPACE" || sign === "CLEAR") {
       this.backspace();
-    } else if (signType === "phrase") {
+    } else if (signType === "phrase" || sign.length > 1) {
       if (this.composedSentence && !this.composedSentence.endsWith(" ")) {
         this.composedSentence += " ";
       }
