@@ -2009,13 +2009,15 @@ class UnmuteApp {
 
       const timeSinceLastCommit = now - (this.lastCommittedTime || 0);
 
-      // If a sign was committed during hand entry motion, UPGRADE it when hand settles on high confidence sign
+      // Upgrade/replace transient hand-entry motion commits with target stable signs
       if (this.hasCommittedInCurrentHandPresence) {
-        if (timeSinceLastCommit < 1500 && isStable && conf >= 0.65 && conf >= (this.lastCommittedConf || 0) + 0.10 && sign !== this.lastCommittedSignName) {
-          this.replaceLastCommittedWord(sign);
-          this.lastCommittedSignName = sign;
-          this.lastCommittedConf = conf;
-          this.lastCommittedTime = now;
+        if (timeSinceLastCommit < 2000 && isStable && sign !== this.lastCommittedSignName) {
+          if (signType === "phrase" || sign.length > 1 || conf >= 0.60) {
+            this.replaceLastCommittedWord(sign);
+            this.lastCommittedSignName = sign;
+            this.lastCommittedConf = conf;
+            this.lastCommittedTime = now;
+          }
         }
         return;
       }
